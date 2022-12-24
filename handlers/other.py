@@ -9,6 +9,8 @@ from db import Database
 import os.path
 from dotenv import load_dotenv
 
+load_dotenv()
+
 db = Database('db_dnevnik_tg_bot.db')
 
 
@@ -74,7 +76,7 @@ def register_and_save_cookies(user_id):
     # )
 
     driver = webdriver.Firefox(
-        executable_path='/snap/bin/geckodriver',
+        executable_path=os.getenv('EX_PATH_DRIVER'),
         options=options,
     )
 
