@@ -6,8 +6,8 @@ from aiogram.dispatcher import Dispatcher
 
 from dotenv import load_dotenv
 
-load_dotenv()
-TOKEN = os.getenv('TOKEN')
+
+TOKEN = '5439011304:AAGF_03sJSmc8GR7gkUhjG_3SEvadUPz3oI'
 storage = MemoryStorage()
 
 bot = Bot(token=TOKEN)
