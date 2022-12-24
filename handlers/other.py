@@ -74,7 +74,7 @@ def register_and_save_cookies(user_id):
     # )
 
     driver = webdriver.Firefox(
-        executable_path='~/snap/bin/geckodriver',
+        executable_path='/snap/bin/geckodriver',
         options=options,
     )
 
