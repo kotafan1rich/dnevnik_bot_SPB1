@@ -129,7 +129,7 @@ async def get_marks_5(message: types.Message):
     res = None
     try:
         await bot.send_message(message.chat.id, 'Подождите...')
-        quater = int(message.text[0])
+        quater = 5
         res = other.get_m_result(quater, user_id=message.from_user.id)
     except AttributeError:
         res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
