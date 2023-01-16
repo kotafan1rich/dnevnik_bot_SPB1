@@ -313,3 +313,5 @@ def get_m_result(quater: int, user_id):
             ...
         finally:
             return 'Возможно вы указали не тот логин или пароль!\nПопробйте ещё раз.'
+    except:
+        return 'Ошибка попробйте позже.'
