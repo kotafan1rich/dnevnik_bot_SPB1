@@ -1,4 +1,3 @@
-# import datetime
 import pickle
 import time
 import random
@@ -71,7 +70,7 @@ def register_and_save_cookies(user_id):
     # options.add_argument(f'--proxy-server={random.choice(proxies)}')
 
     # driver = webdriver.Chrome(
-    #     executable_path=EX_PATH,
+    #     executable_path=EX_PATH_DRIVER,
     #     options=options
     # )
 
@@ -87,33 +86,38 @@ def register_and_save_cookies(user_id):
     # print(login)
     #
     # print(password)
-    driver.get(url=url)
-    time.sleep(1)
-    get_esia = driver.find_element(By.CLASS_NAME, 'button_size_m')
-    driver.execute_script("arguments[0].click();", get_esia)
-    time.sleep(3)
-    email_esia = driver.find_element(By.ID, 'login')
-    passw_esia = driver.find_element(By.ID, 'password')
-    email_esia.send_keys(login)
-    passw_esia.send_keys(password)
-    driver.find_element(By.CLASS_NAME, 'plain-button_wide').click()
-    time.sleep(2)
-    pickle.dump(driver.get_cookies(), open(f'cookies/cookies{user_id}', 'wb'))
-    # driver.get('https://dnevnik2.petersburgedu.ru/estimate')
-    params_group_id = {
-        'p_page': '1',
-        'p_jurisdictions[]': '4',
-        'p_institutions[]': '1376',
-    }
+    try:
+        driver.get(url=url)
+        time.sleep(1)
+        get_esia = driver.find_element(By.CLASS_NAME, 'button_size_m')
+        driver.execute_script("arguments[0].click();", get_esia)
+        time.sleep(3)
+        email_esia = driver.find_element(By.ID, 'login')
+        passw_esia = driver.find_element(By.ID, 'password')
+        email_esia.send_keys(login)
+        passw_esia.send_keys(password)
+        driver.find_element(By.CLASS_NAME, 'plain-button_wide').click()
+        time.sleep(2)
+        pickle.dump(driver.get_cookies(), open(f'cookies/cookies{user_id}', 'wb'))
+        # driver.get('https://dnevnik2.petersburgedu.ru/estimate')
+        params_group_id = {
+            'p_page': '1',
+            'p_jurisdictions[]': '4',
+            'p_institutions[]': '1376',
+        }
 
-    for cookie in pickle.load(open(f'cookies/cookies{user_id}', 'rb')):
-        driver.add_cookie(cookie)
-    cookies = {}
-    for cookies_data in pickle.load(open(f'cookies/cookies{user_id}', 'rb')):
-        cookies[cookies_data['name']] = str(cookies_data['value'])
+        for cookie in pickle.load(open(f'cookies/cookies{user_id}', 'rb')):
+            driver.add_cookie(cookie)
+        cookies = {}
+        for cookies_data in pickle.load(open(f'cookies/cookies{user_id}', 'rb')):
+            cookies[cookies_data['name']] = str(cookies_data['value'])
 
-    group_id = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/group/related-group-list', params=params_group_id, cookies=cookies, headers=headers).json().get('data').get('items')[0].get('id')
-    db.set_group_id(user_id=user_id, group_id=group_id)
+        group_id = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/group/related-group-list', params=params_group_id, cookies=cookies, headers=headers).json().get('data').get('items')[0].get('id')
+        db.set_group_id(user_id=user_id, group_id=group_id)
+    except Exception:
+        ...
+    finally:
+        driver.quit()
 
 
 def convert_cookies(user_id):
@@ -266,39 +270,46 @@ def sort_data(data, quater):
 
 
 def get_m_result(quater: int, user_id):
-    if quater == 1:
-        result: dict = get_data(user_id=user_id, quater=quater).get('data')
-        if result == 'нет оценок':
-            res = 'Нет оценок'
+    try:
+        if quater == 1:
+            result: dict = get_data(user_id=user_id, quater=quater).get('data')
+            if result == 'нет оценок':
+                res = 'Нет оценок'
+            else:
+                res = sort_data(data=result, quater=quater)
+            return res
+        elif quater == 2:
+            result: dict = get_data(quater=quater, user_id=user_id).get('data')
+            if result == 'нет оценок':
+                res = 'Нет оценок'
+            else:
+                res = sort_data(data=result, quater=quater)
+            return res
+        elif quater == 3:
+            result: dict = get_data(quater=quater, user_id=user_id).get('data')
+            if result == 'нет оценок':
+                res = 'Нет оценок'
+            else:
+                res = sort_data(data=result, quater=quater)
+            return res
+        elif quater == 4:
+            result: dict = get_data(quater=quater, user_id=user_id).get('data')
+            if result == 'нет оценок':
+                res = 'Нет оценок'
+            else:
+                res = sort_data(data=result, quater=quater)
+            return res
         else:
-            res = sort_data(data=result, quater=quater)
-        return res
-
-    elif quater == 2:
-        result: dict = get_data(quater=quater, user_id=user_id).get('data')
-        if result == 'нет оценок':
-            res = 'Нет оценок'
-        else:
-            res = sort_data(data=result, quater=quater)
-        return res
-    elif quater == 3:
-        result: dict = get_data(quater=quater, user_id=user_id).get('data')
-        if result == 'нет оценок':
-            res = 'Нет оценок'
-        else:
-            res = sort_data(data=result, quater=quater)
-        return res
-    elif quater == 4:
-        result: dict = get_data(quater=quater, user_id=user_id).get('data')
-        if result == 'нет оценок':
-            res = 'Нет оценок'
-        else:
-            res = sort_data(data=result, quater=quater)
-        return res
-    else:
-        result: dict = get_data(quater=5, user_id=user_id).get('data')
-        if result == 'нет оценок':
-            res = 'Нет оценок'
-        else:
-            res = sort_data(data=result, quater=quater)
-        return res
+            result: dict = get_data(quater=5, user_id=user_id).get('data')
+            if result == 'нет оценок':
+                res = 'Нет оценок'
+            else:
+                res = sort_data(data=result, quater=quater)
+            return res
+    except AttributeError:
+        try:
+            os.remove(f'cookies/cookies{user_id}')
+        except FileNotFoundError:
+            ...
+        finally:
+            return 'Возможно вы указали не тот логин или пароль!\nПопробйте ещё раз.'

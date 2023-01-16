@@ -88,13 +88,14 @@ async def get_marks_1(message: types.Message):
 
 
 async def get_marks_2(message: types.Message):
-    try:
-        await bot.send_message(message.chat.id, 'Подождите...')
-        quater = int(message.text[0])
-        res = other.get_m_result(quater, user_id=message.from_user.id)
-        await bot.send_message(message.chat.id, res)
-    except AttributeError:
-        await bot.send_message(message.chat.id, 'Ошибка... Оценки не найдены, попробуйте ещё раз')
+    # try:
+    await bot.send_message(message.chat.id, 'Подождите...')
+    quater = int(message.text[0])
+    res = other.get_m_result(quater, user_id=message.from_user.id)
+    await bot.send_message(message.chat.id, res)
+    # except AttributeError:
+    #     os.remove(f'cookies/cookies{message.chat.id}')
+    #     await bot.send_message(message.chat.id, 'Ошибка... Оценки не найдены, попробуйте ещё раз')
 
 
 async def get_marks_3(message: types.Message):
@@ -131,6 +132,18 @@ async def get_help(message: types.Message):
     await bot.send_message(message.chat.id, help)
 
 
+async def del_cookies(message: types.Message):
+    res = None
+    user_id = message.chat.id
+    try:
+        os.remove(f'cookies/cookies{user_id}')
+        res = 'Cookies были удалены'
+    except FileNotFoundError:
+        res = 'У нас нету ваших Cookies'
+    finally:
+        await bot.send_message(user_id, res, reply_markup=kb_client)
+
+
 async def unknow_command(message: types.Message):
     await bot.send_message(message.chat.id, 'Упс... Я тебя не понял')
     await bot.send_message(message.chat.id, help, reply_markup=kb_client)
@@ -139,6 +152,7 @@ async def unknow_command(message: types.Message):
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_start, commands='start')
     dp.register_message_handler(get_help, text=['help'])
+    dp.register_message_handler(del_cookies, text=['Удалить Cookies'])
     dp.register_message_handler(cancel_handler, state='*', text=['Отмена'])
     dp.register_message_handler(login_users, text=['Изменить логин и пароль'], state=None)
     dp.register_message_handler(get_password, state=FSMLoginEsia.password)
