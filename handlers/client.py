@@ -78,54 +78,68 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 
 async def get_marks_1(message: types.Message):
+    res = None
     try:
         await bot.send_message(message.chat.id, 'Подождите...')
         quater = int(message.text[0])
         res = other.get_m_result(quater, user_id=message.from_user.id)
-        await bot.send_message(message.chat.id, res)
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client_login)
     except AttributeError:
-        await bot.send_message(message.chat.id, 'Ошибка... Оценки не найдены, попробуйте ещё раз')
+        res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
+    finally:
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client)
 
 
 async def get_marks_2(message: types.Message):
-    # try:
-    await bot.send_message(message.chat.id, 'Подождите...')
-    quater = int(message.text[0])
-    res = other.get_m_result(quater, user_id=message.from_user.id)
-    await bot.send_message(message.chat.id, res)
-    # except AttributeError:
-    #     os.remove(f'cookies/cookies{message.chat.id}')
-    #     await bot.send_message(message.chat.id, 'Ошибка... Оценки не найдены, попробуйте ещё раз')
+    res = None
+    try:
+        await bot.send_message(message.chat.id, 'Подождите...')
+        quater = int(message.text[0])
+        res = other.get_m_result(quater, user_id=message.from_user.id)
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client_login)
+    except AttributeError:
+        res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
+    finally:
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client)
 
 
 async def get_marks_3(message: types.Message):
+    res = None
     try:
         await bot.send_message(message.chat.id, 'Подождите...')
         quater = int(message.text[0])
         res = other.get_m_result(quater, user_id=message.from_user.id)
-        await bot.send_message(message.chat.id, res)
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client_login)
     except AttributeError:
-        await bot.send_message(message.chat.id, 'Ошибка... Оценки не найдены, попробуйте ещё раз')
+        res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
+    finally:
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client)
 
 
 async def get_marks_4(message: types.Message):
+    res = None
     try:
         await bot.send_message(message.chat.id, 'Подождите...')
         quater = int(message.text[0])
         res = other.get_m_result(quater, user_id=message.from_user.id)
-        await bot.send_message(message.chat.id, res)
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client_login)
     except AttributeError:
-        await bot.send_message(message.chat.id, 'Ошибка... Оценки не найдены, попробуйте ещё раз')
+        res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
+    finally:
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client)
 
 
 async def get_marks_5(message: types.Message):
+    res = None
     try:
         await bot.send_message(message.chat.id, 'Подождите...')
-        quater = 5
+        quater = int(message.text[0])
         res = other.get_m_result(quater, user_id=message.from_user.id)
-        await bot.send_message(message.chat.id, res)
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client_login)
     except AttributeError:
-        await bot.send_message(message.chat.id, 'Ошибка... Оценки не найдены, попробуйте ещё раз')
+        res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
+    finally:
+        await bot.send_message(message.chat.id, res, reply_markup=kb_client)
 
 
 async def get_help(message: types.Message):
