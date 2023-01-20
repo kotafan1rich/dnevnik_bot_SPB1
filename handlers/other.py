@@ -44,6 +44,7 @@ def chek_esimate_type_name(estimate_type_name):
 
 
 def register_and_save_cookies(user_id):
+
     headers = {
         'Accept': '*/*',
         'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -88,7 +89,7 @@ def register_and_save_cookies(user_id):
     # print(password)
     try:
         driver.get(url=url)
-        time.sleep(1)
+        time.sleep(0.7)
         get_esia = driver.find_element(By.CLASS_NAME, 'button_size_m')
         driver.execute_script("arguments[0].click();", get_esia)
         time.sleep(3)
@@ -236,9 +237,7 @@ def get_marks(quater, cookies, user_id):
                         if chek_esimate_type_name(subject_info_1['estimate_type_name']) and subject_info_1['estimate_value_name'] != 'Зачёт':
                             marks[subject_info_1['subject_name']].append(int(subject_info_1['estimate_value_name']))
 
-    data = {'data': marks}
-
-    return data
+    return marks
 
 
 def sort_data(data, quater):
@@ -271,47 +270,19 @@ def sort_data(data, quater):
 
 def get_m_result(quater: int, user_id):
     try:
-        if quater == 1:
-            result: dict = get_data(user_id=user_id, quater=quater).get('data')
-            if result == 'нет оценок':
-                res = 'Нет оценок'
-            else:
-                res = sort_data(data=result, quater=quater)
-            return res
-        elif quater == 2:
-            result: dict = get_data(quater=quater, user_id=user_id).get('data')
-            if result == 'нет оценок':
-                res = 'Нет оценок'
-            else:
-                res = sort_data(data=result, quater=quater)
-            return res
-        elif quater == 3:
-            result: dict = get_data(quater=quater, user_id=user_id).get('data')
-            if result == 'нет оценок':
-                res = 'Нет оценок'
-            else:
-                res = sort_data(data=result, quater=quater)
-            return res
-        elif quater == 4:
-            result: dict = get_data(quater=quater, user_id=user_id).get('data')
-            if result == 'нет оценок':
-                res = 'Нет оценок'
-            else:
-                res = sort_data(data=result, quater=quater)
-            return res
+        result: dict = get_data(user_id=user_id, quater=quater)
+        if result == 'нет оценок':
+            res = 'Нет оценок'
         else:
-            result: dict = get_data(quater=5, user_id=user_id).get('data')
-            if result == 'нет оценок':
-                res = 'Нет оценок'
-            else:
-                res = sort_data(data=result, quater=quater)
-            return res
+            res = sort_data(data=result, quater=quater)
+        return res
+
     except AttributeError:
         try:
             os.remove(f'cookies/cookies{user_id}')
         except FileNotFoundError:
             ...
         finally:
-            return 'Возможно вы указали не тот логин или пароль!\nПопробйте ещё раз.'
+            return 'Возможно вы указали не тот логин или пароль!\nПопробуйте ещё раз.'
     except:
-        return 'Ошибка попробйте позже.'
+        return 'Ошибка попробуйте позже.'
