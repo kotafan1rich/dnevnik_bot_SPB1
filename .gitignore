@@ -7,3 +7,4 @@ db.sqlite3
 .env
 geckodriver.log
 chrome
+cookies/*
