@@ -5,7 +5,7 @@ from handlers import client
 import os
 
 try:
-    os.rmdir('~/dnevnik_bot_SPB1')
+    os.rmdir('~/dnevnik_bot_SPB1/cookies')
 except OSError:
     pass
 
