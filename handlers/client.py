@@ -23,11 +23,10 @@ class FSMLoginEsia(StatesGroup):
     password = State()
 
 
-async def get_message(message: types.Message):
+async def get_message(message: types.Message, quater: int):
     res = None
     try:
         await bot.send_message(message.chat.id, 'Подождите...')
-        quater = int(message.text[0])
         res = other.get_m_result(quater, user_id=message.from_user.id)
     except AttributeError:
         res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
@@ -89,32 +88,14 @@ async def cancel_handler(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, 'Отмена, так отмена', reply_markup=kb_client)
 
 
-async def get_marks_1(message: types.Message):
-    await get_message(message)
-
-
-async def get_marks_2(message: types.Message):
-    await get_message(message)
-
-
-async def get_marks_3(message: types.Message):
-    await get_message(message)
-
-
-async def get_marks_4(message: types.Message):
-    await get_message(message)
-
-
-async def get_marks_5(message: types.Message):
-    res = None
-    try:
-        await bot.send_message(message.chat.id, 'Подождите...')
+async def get_marks_quater(message: types.Message):
+    quater = message.text[0]
+    if quater == 'Год':
         quater = 5
-        res = other.get_m_result(quater, user_id=message.from_user.id)
-    except AttributeError:
-        res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
-    finally:
-        await bot.send_message(message.chat.id, res, reply_markup=kb_client)
+        await get_message(message, quater)
+    else:
+        await get_message(message, int(quater))
+
 
 
 async def get_help(message: types.Message):
@@ -147,9 +128,5 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_password, state=FSMLoginEsia.password)
     dp.register_message_handler(get_login, state=FSMLoginEsia.login)
     dp.register_message_handler(cancel_handler, state='*', text=['Отмена'])
-    dp.register_message_handler(get_marks_1, text=['1 четверть'])
-    dp.register_message_handler(get_marks_2, text=['2 четверть'])
-    dp.register_message_handler(get_marks_3, text=['3 четверть'])
-    dp.register_message_handler(get_marks_4, text=['4 четверть'])
-    dp.register_message_handler(get_marks_5, text=['Год'])
+    dp.register_message_handler(get_marks_quater, text=['1 четверть', '2 четверть','3 четверть','4 четверть', 'Год'])
     dp.register_message_handler(unknow_command)
