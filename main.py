@@ -6,8 +6,8 @@ import os
 
 try:
     os.rmdir('~/dnevnik_bot_SPB1/cookies')
-except OSError:
-    print(1)
+except OSError as ex:
+    print(ex)
     pass
 
 client.register_handlers_client(dp)
