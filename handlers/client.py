@@ -89,7 +89,7 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 
 async def get_marks_quater(message: types.Message):
-    quater = message.text[0]
+    quater = message.text.split()[0]
     if quater == 'Год':
         quater = 5
         await get_message(message, quater)
