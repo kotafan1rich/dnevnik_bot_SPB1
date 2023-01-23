@@ -25,13 +25,14 @@ class FSMLoginEsia(StatesGroup):
 
 async def get_message(message: types.Message, quater: int):
     res = None
+    wait_message = None
     try:
-        await bot.send_message(message.chat.id, 'Подождите...')
+        wait_message = await bot.send_message(message.chat.id, 'Подождите...')
         res = other.get_m_result(quater, user_id=message.from_user.id)
     except AttributeError:
         res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
     finally:
-        await bot.send_message(message.chat.id, res, reply_markup=kb_client)
+        await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)
 
 
 async def add_login_password_db(state, user_id):
@@ -95,7 +96,6 @@ async def get_marks_quater(message: types.Message):
         await get_message(message, quater)
     else:
         await get_message(message, int(quater))
-
 
 
 async def get_help(message: types.Message):
