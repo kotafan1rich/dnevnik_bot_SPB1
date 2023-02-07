@@ -28,6 +28,27 @@ class Database:
         with self.connection:
             return self.cursor.execute("UPDATE `users` SET `group_id` = ? WHERE `user_id` = ?", (group_id, user_id,))
 
+    def set_name(self, user_id, name):
+        with self.connection:
+            return self.cursor.execute("UPDATE `users` SET `name` = ? WHERE `user_id` = ?", (name, user_id,))
+
+    def set_education_id(self, user_id, education_id):
+        with self.connection:
+            return self.cursor.execute("UPDATE `users` SET `education_id` = ? WHERE `user_id` = ?", (education_id, user_id,))
+
+
+    def get_education_id(self, user_id):
+        with self.connection:
+            education_id = self.cursor.execute("SELECT `education_id` FROM `users` WHERE `user_id` = ?", (user_id,)).fetchall()
+            return education_id[0]
+
+
+    def get_name(self, user_id):
+        with self.connection:
+            name = self.cursor.execute("SELECT `name` FROM `users` WHERE `user_id` = ?", (user_id,)).fetchall()
+            return name[0]
+
+
     def get_group_id(self, user_id):
         with self.connection:
             group_id = self.cursor.execute("SELECT `login`, `group_id` FROM `users` WHERE `user_id` = ?", (user_id,)).fetchall()

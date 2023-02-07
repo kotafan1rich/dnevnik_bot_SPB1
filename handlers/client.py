@@ -14,13 +14,14 @@ help = '''
 [1] Чтобы начать пользоваться ботом необходимо добавить логин и пароль от гос услуг для доступа к вашим оценкам. 
 [2] Для получения своего среднего балла нажмите на соответствующие кнопки.
 [3] Все вопросы и отзывы сюда --> https://t.me/Gohdot.
-!!! Полученные данные не используютя в посторонних целях и не передаются третим лицам !!!
+!!! Полученные данные: парооль и логин от гос услуг, не используютя в посторонних целях и не передаются третим лицам !!!
 '''
 
 
 class FSMLoginEsia(StatesGroup):
     login = State()
     password = State()
+    name = State()
 
 
 async def get_message(message: types.Message, quater: int):
@@ -63,8 +64,30 @@ async def get_start(message: types.Message):
         await bot.send_message(message.chat.id, 'Снова здравствуйте', reply_markup=kb_client)
 
 
-async def login_users(message: types.Message):
+# async def add_name_db(state, user_id):
+#     async with state.proxy() as data:
+#         name = data['name']
 
+
+
+async def add_name(message: types.Message):
+    await FSMLoginEsia.name.set()
+    await bot.send_message(message.chat.id, 'Введите имя человека, чьи оценки будете получать', reply_markup=kb_client_login)
+
+
+async def get_name( message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['name'] = message.text
+        name = data['name']
+        db.set_name(user_id=message.from_user.id, name=name)
+        try:
+            os.remove(f'cookies/cookies{message.from_user.id}')
+        except FileNotFoundError:
+            ...
+        await state.finish()
+        await bot.send_message(message.chat.id, 'Имя добавлено.', reply_markup=kb_client)
+
+async def login_users(message: types.Message):
     await FSMLoginEsia.login.set()
     await bot.send_message(message.chat.id, 'Введите логин', reply_markup=kb_client_login)
 
@@ -92,7 +115,7 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 async def get_marks_quater(message: types.Message):
     quater = message.text.split()[0]
     if quater == 'Год':
-        quater = 5
+        quater = 20
         await get_message(message, quater)
     else:
         await get_message(message, int(quater))
@@ -124,6 +147,8 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_help, text=['help'])
     dp.register_message_handler(del_cookies, text=['Удалить Cookies'])
     dp.register_message_handler(cancel_handler, state='*', text=['Отмена'])
+    dp.register_message_handler(add_name, text=['Изменить имя'], state=None)
+    dp.register_message_handler(get_name, state=FSMLoginEsia.name)
     dp.register_message_handler(login_users, text=['Изменить логин и пароль'], state=None)
     dp.register_message_handler(get_password, state=FSMLoginEsia.password)
     dp.register_message_handler(get_login, state=FSMLoginEsia.login)
