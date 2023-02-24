@@ -3,6 +3,7 @@ import os
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher import FSMContext
 from aiogram import types, Dispatcher
+from aiogram.utils import exceptions
 from create_bot import bot
 from handlers import other
 from keyboards import kb_client, kb_client_login
@@ -28,15 +29,18 @@ async def get_message(message: types.Message, quater: int):
     res = None
     wait_message = None
     try:
-        wait_message = await bot.send_message(message.chat.id, 'Подождите...')
-        res = other.get_m_result(quater, user_id=message.from_user.id)
-    except AttributeError:
-        res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
-    finally:
-        await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)
+        try:
+            wait_message = await bot.send_message(message.chat.id, 'Подождите...')
+            res = other.get_m_result(quater, user_id=message.from_user.id)
+        except AttributeError:
+            res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
+        finally:
+            await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)
+    except exceptions.MessageTextIsEmpty:
+        await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text='Ошибка... оценки не найдены, попробуйте ещё раз')
 
 
-async def add_login_password_db(state, user_id):
+async def add_login_password_db(state: FSMContext, user_id):
     async with state.proxy() as data:
         login = data['login']
         password = data['password']
@@ -75,7 +79,7 @@ async def add_name(message: types.Message):
     await bot.send_message(message.chat.id, 'Введите имя человека, чьи оценки будете получать', reply_markup=kb_client_login)
 
 
-async def get_name( message: types.Message, state: FSMContext):
+async def get_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['name'] = message.text
         name = data['name']

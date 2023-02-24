@@ -8,17 +8,18 @@ from db import Database
 import os.path
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 db = Database('db_dnevnik_tg_bot.db')
 
+bad_estimate_value_name = ['замечание', 'неизвестная', 'по болезни', 'зачёт']
+bad_estimate_type_name = ['годовая', 'итоговая', 'четверть', 'посещаемость']
+estimate_type_name_value = ['работа', 'задание', 'диктант', 'тест', 'чтение', 'сочинение', 'изложение', 'опрос', 'зачёт']
 
-estimate_type_name_value = ['работа', 'задание', 'диктант', 'тест', 'чтение', 'сочинение', 'изложение', 'опрос']
 good_value_of_estimate_type_name = []
+
 for i in estimate_type_name_value:
     good_value_of_estimate_type_name.append(i)
-    good_value_of_estimate_type_name.append(f'{i[0].upper()}{i[1:]}')
 
 ua = [
     'Mozilla/5.0 (Windows; U; MSIE 9.0; Windows NT 9.0; en-US)',
@@ -32,20 +33,27 @@ ua = [
     'Mozilla/5.0 (iPad; CPU OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5355d Safari/8536.25'
 ]
 
-
-# proxies = ['89.107.197.165:3128', '89.108.74.82:1080']
 def chek_esimate_type_name(estimate_type_name):
-    s = 0
     for good_value in good_value_of_estimate_type_name:
-        if good_value in estimate_type_name.split():
-            s += 1
-        if s == 1:
+        if good_value in estimate_type_name.lower():
             return True
     return False
 
+def get_marks_dict(response):
+    marks = {}
+    marks_info = response.get('data').get('items')
+    for info_marks_all in marks_info:
+        marks[info_marks_all['subject_name']] = []
+
+    for subject_info in marks_info:
+        if str(subject_info['estimate_value_name']).lower() not in bad_estimate_value_name:
+            if subject_info['estimate_type_name'].lower() not in bad_estimate_type_name:
+                if chek_esimate_type_name(subject_info['estimate_type_name']):
+                    marks[subject_info['subject_name']].append(int(subject_info['estimate_value_name']))
+    return marks
+
 
 def register_and_save_cookies(user_id):
-
     headers = {
         'Accept': '*/*',
         'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -82,18 +90,15 @@ def register_and_save_cookies(user_id):
     )
 
     url = 'https://dnevnik2.petersburgedu.ru'
-    # url1 = 'https://intoli.com/blog/not-possible-to-block-chrome-headless/chrome-headless-test.html'
 
     login, password = db.get_login_and_password(user_id)[0], db.get_login_and_password(user_id)[1]
-    # print(login)
-    #
-    # print(password)
+
     try:
         driver.get(url=url)
         time.sleep(0.7)
         get_esia = driver.find_element(By.CLASS_NAME, 'button_size_m')
         driver.execute_script("arguments[0].click();", get_esia)
-        time.sleep(3)
+        time.sleep(3.2)
         email_esia = driver.find_element(By.ID, 'login')
         passw_esia = driver.find_element(By.ID, 'password')
         email_esia.send_keys(login)
@@ -101,7 +106,6 @@ def register_and_save_cookies(user_id):
         driver.find_element(By.CLASS_NAME, 'plain-button_wide').click()
         time.sleep(3)
         pickle.dump(driver.get_cookies(), open(f'cookies/cookies{user_id}', 'wb'))
-        # driver.get('https://dnevnik2.petersburgedu.ru/estimate')
         params_group_id = {
             'p_page': '1'
         }
@@ -119,13 +123,11 @@ def register_and_save_cookies(user_id):
             if data.get('firstname') == name:
                 students_info = data
                 break
-        # print(students_info['educations'][0]['group_id'])
         group_id = students_info['educations'][0]['group_id']
         education_id = students_info['educations'][0]['education_id']
         db.set_group_id(user_id=user_id, group_id=group_id)
         db.set_education_id(user_id=user_id, education_id=education_id)
     except IndexError:
-        # print(ex)
         ...
     finally:
         driver.quit()
@@ -175,9 +177,8 @@ def get_marks(quater, cookies, user_id):
         'p_group_ids[]': group_id,
         'p_page': '1',
     }
-    # print(group_id)
+
     response_date_f_t = requests.get(f'https://dnevnik2.petersburgedu.ru/api/group/group/get-list-period', params=params_date_f_t, cookies=cookies, headers=headers).json().get('data').get('items')
-    # print(response_date_f_t)
     date_f = None
     date_t = None
     for data in response_date_f_t:
@@ -203,16 +204,7 @@ def get_marks(quater, cookies, user_id):
     response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
                             cookies=cookies, headers=headers).json()
 
-    marks = {}
-    marks_info = response.get('data').get('items')
-    for info_marks_all in marks_info:
-        marks[info_marks_all['subject_name']] = []
-
-    for subject_info in marks_info:
-        if subject_info['estimate_value_name'] != 'Замечание':
-            if 'Годовая' not in subject_info['estimate_type_name'] and 'Итоговая' not in subject_info['estimate_type_name'] and 'четверть' not in subject_info['estimate_type_name'] and 'Посещаемость' not in subject_info['estimate_type_name']:
-                if chek_esimate_type_name(subject_info['estimate_type_name']) and subject_info['estimate_value_name'] != 'Зачёт':
-                    marks[subject_info['subject_name']].append(int(subject_info['estimate_value_name']))
+    marks = get_marks_dict(response=response)
 
     total_pages = response.get('data').get('total_pages')
 
@@ -229,13 +221,10 @@ def get_marks(quater, cookies, user_id):
 
                 response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
                                         cookies=cookies, headers=headers).json()
-                marks_info = response.get('data').get('items')
-
-                for subject_info_1 in marks_info:
-                    if subject_info_1['estimate_value_name'] != 'Замечание':
-                        if 'Годовая' not in subject_info_1['estimate_type_name'] and 'Итоговая' not in subject_info_1['estimate_type_name'] and 'четверть' not in subject_info_1['estimate_type_name'] and 'Посещаемость' not in subject_info_1['estimate_type_name']:
-                            if chek_esimate_type_name(subject_info_1['estimate_type_name']) and subject_info_1['estimate_value_name'] != 'Зачёт':
-                                marks[subject_info_1['subject_name']].append(int(subject_info_1['estimate_value_name']))
+                marks_page = get_marks_dict(response=response)
+                for sub, val in marks_page.items():
+                    for mark in val:
+                        marks[sub].append(mark)
         else:
             params = {
                 'p_educations[]': p_educations,
@@ -247,13 +236,10 @@ def get_marks(quater, cookies, user_id):
 
             response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
                                     cookies=cookies, headers=headers).json()
-            marks_info = response.get('data').get('items')
-
-            for subject_info_1 in marks_info:
-                if subject_info_1['estimate_value_name'] != 'Замечание':
-                    if 'Годовая' not in subject_info_1['estimate_type_name'] and 'Итоговая' not in subject_info_1['estimate_type_name'] and 'четверть' not in subject_info_1['estimate_type_name'] and 'Посещаемость' not in subject_info_1['estimate_type_name']:
-                        if chek_esimate_type_name(subject_info_1['estimate_type_name']) and subject_info_1['estimate_value_name'] != 'Зачёт':
-                            marks[subject_info_1['subject_name']].append(int(subject_info_1['estimate_value_name']))
+            marks_page = get_marks_dict(response=response)
+            for sub, val in marks_page.items():
+                for mark in val:
+                    marks[sub].append(mark)
     return marks
 
 
@@ -286,21 +272,18 @@ def sort_data(data, quater):
 
 
 def get_m_result(quater: int, user_id):
-    try:
-        result: dict = get_data(user_id=user_id, quater=quater)
-        if result == 'нет оценок':
-            res = 'Нет оценок'
-        else:
-            res = sort_data(data=result, quater=quater)
-        return res
+    # try:
+    result: dict = get_data(user_id=user_id, quater=quater)
+    res = sort_data(data=result, quater=quater)
+    return res
 
-    except AttributeError:
-        try:
-            os.remove(f'cookies/cookies{user_id}')
-        except FileNotFoundError:
-            ...
-
-        finally:
-            return 'Возможно вы указали не тот логин или пароль!\nПопробуйте ещё раз.'
-    except Exception:
-        return 'Ошибка попробуйте позже.'
+    # except AttributeError:
+    #     try:
+    #         os.remove(f'cookies/cookies{user_id}')
+    #     except FileNotFoundError:
+    #         ...
+    #
+    #     finally:
+    #         return 'Возможно вы указали не тот логин или пароль!\nПопробуйте ещё раз.'
+    # except Exception:
+    #     return 'Ошибка попробуйте позже.'
