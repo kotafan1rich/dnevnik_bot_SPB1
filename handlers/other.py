@@ -246,10 +246,11 @@ def get_marks(quater, cookies, user_id):
 def sort_data(data, quater):
     for subject_info in data.copy():
         try:
+            last_three = data[subject_info][2::-1]
             count_marks = len(data[subject_info])
             sum_marks = sum(data[subject_info])
 
-            data[subject_info] = [round(sum_marks / count_marks, 2), count_marks]
+            data[subject_info] = [round(sum_marks / count_marks, 2), count_marks, last_three]
         except ZeroDivisionError:
             del data[subject_info]
 
@@ -260,14 +261,17 @@ def sort_data(data, quater):
         res = f'Год\n\n'
         for subject, j in sort_result.items():
             res += f'{subject}: {j[0]} ({j[1]})\n'
-        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство',
-                                                                                  'ИЗО')
+        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО')
     else:
         res = f'{quater} четверть\n\n'
         for subject, j in sort_result.items():
-            res += f'{subject}: {j[0]} ({j[1]})\n'
-        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство',
-                                                                                  'ИЗО')
+            averge = j[0]
+            count = j[1]
+            last_3 = ''
+            for m in j[2]:
+                last_3 += str(m) + ' '
+            res += f'{subject}: {averge} ({count}) {last_3}\n'
+        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Русский язык', 'Рус. язык').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Англ. язык').replace('История России. Всеобщая история', 'История')
     return res
 
 
