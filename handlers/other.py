@@ -92,30 +92,27 @@ def register_and_save_cookies(user_id):
     url = 'https://dnevnik2.petersburgedu.ru'
 
     login, password = db.get_login_and_password(user_id)[0], db.get_login_and_password(user_id)[1]
-
     try:
         driver.get(url=url)
-        time.sleep(0.7)
+        time.sleep(5)
         get_esia = driver.find_element(By.CLASS_NAME, 'button_size_m')
         driver.execute_script("arguments[0].click();", get_esia)
-        time.sleep(3.2)
+        time.sleep(10)
         email_esia = driver.find_element(By.ID, 'login')
         passw_esia = driver.find_element(By.ID, 'password')
         email_esia.send_keys(login)
         passw_esia.send_keys(password)
         driver.find_element(By.CLASS_NAME, 'plain-button_wide').click()
-        time.sleep(3)
+        time.sleep(5)
         pickle.dump(driver.get_cookies(), open(f'cookies/cookies{user_id}', 'wb'))
         params_group_id = {
             'p_page': '1'
         }
 
-        for cookie in pickle.load(open(f'cookies/cookies{user_id}', 'rb')):
-            driver.add_cookie(cookie)
         cookies = {}
+
         for cookies_data in pickle.load(open(f'cookies/cookies{user_id}', 'rb')):
             cookies[cookies_data['name']] = str(cookies_data['value'])
-
         name = db.get_name(user_id=user_id)[0]
         response_info = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/person/related-child-list', params=params_group_id, cookies=cookies, headers=headers).json().get('data').get('items')
         students_info = None
@@ -177,8 +174,8 @@ def get_marks(quater, cookies, user_id):
         'p_group_ids[]': group_id,
         'p_page': '1',
     }
-
     response_date_f_t = requests.get(f'https://dnevnik2.petersburgedu.ru/api/group/group/get-list-period', params=params_date_f_t, cookies=cookies, headers=headers).json().get('data').get('items')
+
     date_f = None
     date_t = None
     for data in response_date_f_t:
