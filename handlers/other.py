@@ -261,17 +261,17 @@ def sort_data(data, quater):
         res = f'Год\n\n'
         for subject, j in sort_result.items():
             res += f'{subject}: {j[0]} ({j[1]})\n'
-        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО')
+        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
     else:
         res = f'{quater} четверть\n\n'
-        for subject, j in sort_result.items():
-            averge = j[0]
-            count = j[1]
+        for subject, s_data in sort_result.items():
+            averge = s_data[0]
+            count = s_data[1]
             last_3 = ''
-            for m in j[2]:
+            for m in s_data[2]:
                 last_3 += str(m) + ' '
             res += f'{subject}: {averge} ({count}) {last_3}\n'
-        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Русский язык', 'Рус. язык').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Англ. язык').replace('История России. Всеобщая история', 'История')
+    res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
     return res
 
 

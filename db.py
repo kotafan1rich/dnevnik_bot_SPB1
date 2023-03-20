@@ -6,6 +6,11 @@ class Database:
         self.connection = sqlite3.connect(db_file)
         self.cursor = self.connection.cursor()
 
+    def get_all_user_id(self):
+        with self.connection:
+            user_id = self.cursor.execute("SELECT `user_id` FROM `users`").fetchall()
+        return [user[0] for user in user_id]
+
     def add_user(self, user_id):
         with self.connection:
             save = self.cursor.execute("INSERT INTO `users` (`user_id`) VALUES (?)", (user_id,))

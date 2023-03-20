@@ -6,10 +6,12 @@ from aiogram import types, Dispatcher
 from aiogram.utils import exceptions
 from create_bot import bot
 from handlers import other
-from keyboards import kb_client, kb_client_login
+from keyboards import kb_client, kb_client_login, kb_admin
 from db import Database
 
 db = Database('db_dnevnik_tg_bot.db')
+
+admins = [1324716819,]
 
 help = '''
 [1] Чтобы начать пользоваться ботом необходимо добавить логин и пароль от гос услуг для доступа к вашим оценкам. 
@@ -57,6 +59,7 @@ async def add_login_password_db(state: FSMContext, user_id):
 async def get_start(message: types.Message):
     user_id = message.from_user.id
 
+
     if not db.user_exists(user_id=user_id):
         db.add_user(user_id=user_id)
 
@@ -66,8 +69,14 @@ async def get_start(message: types.Message):
         if login is None or password is None:
             await FSMLoginEsia.login.set()
             await bot.send_message(message.chat.id, 'Введите логин', reply_markup=kb_client_login)
+            if user_id in admins:
+                await bot.send_message(message.chat.id, 'Здравствуйте', reply_markup=kb_admin)
+
     else:
-        await bot.send_message(message.chat.id, 'Снова здравствуйте', reply_markup=kb_client)
+        if user_id in admins:
+            await bot.send_message(message.chat.id, 'Здравствуйте', reply_markup=kb_admin)
+        else:
+            await bot.send_message(message.chat.id, 'Снова здравствуйте', reply_markup=kb_client)
 
 
 # async def add_name_db(state, user_id):
