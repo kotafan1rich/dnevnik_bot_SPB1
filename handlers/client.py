@@ -16,8 +16,8 @@ admins = [1324716819,]
 help = '''
 [1] Чтобы начать пользоваться ботом необходимо добавить логин и пароль от гос услуг для доступа к вашим оценкам. 
 [2] Для получения своего среднего балла нажмите на соответствующие кнопки.
-[3] Оцнеки выводятся в формате:
-'ПРЕДМЕТ': 'СР.БАЛЛ' ('КОЛ-ВО') 'ПОСЛЕДНИЕ 3'
+[3] Оценки выводятся в формате:
+'ПРЕДМЕТ': 'СР.БАЛЛ' ('КОЛ-ВО') 'ПОСЛЕДНИЕ 3' | 'ЧЕТВЕРТНАЯ'
 [4] Все вопросы и отзывы сюда --> https://t.me/Gohdot.
 !!! Полученные данные: парооль и логин от гос услуг, не используютя в посторонних целях и не передаются третим лицам !!!
 '''
@@ -36,7 +36,7 @@ async def get_message(message: types.Message, quater: int):
         try:
             wait_message = await bot.send_message(message.chat.id, 'Подождите...')
             res = other.get_m_result(quater, user_id=message.from_user.id)
-        except AttributeError:
+        except AttributeError as ex:
             res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
         finally:
             await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)
@@ -77,12 +77,6 @@ async def get_start(message: types.Message):
             await bot.send_message(message.chat.id, 'Здравствуйте', reply_markup=kb_admin)
         else:
             await bot.send_message(message.chat.id, 'Снова здравствуйте', reply_markup=kb_client)
-
-
-# async def add_name_db(state, user_id):
-#     async with state.proxy() as data:
-#         name = data['name']
-
 
 
 async def add_name(message: types.Message):

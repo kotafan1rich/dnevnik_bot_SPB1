@@ -21,6 +21,7 @@ good_value_of_estimate_type_name = []
 for i in estimate_type_name_value:
     good_value_of_estimate_type_name.append(i)
 
+
 ua = [
     'Mozilla/5.0 (Windows; U; MSIE 9.0; Windows NT 9.0; en-US)',
     'Mozilla/5.0 (compatible; MSIE 10.0; Macintosh; Intel Mac OS X 10_7_3; Trident/6.0)',
@@ -39,17 +40,25 @@ def chek_esimate_type_name(estimate_type_name):
             return True
     return False
 
+
 def get_marks_dict(response):
     marks = {}
     marks_info = response.get('data').get('items')
     for info_marks_all in marks_info:
-        marks[info_marks_all['subject_name']] = []
+        marks[info_marks_all['subject_name']] = {'q_marks': [],
+                                                  'last_three': [],
+                                                  'count_marks': [],
+                                                  'average': [],
+                                                  'final': []
+                                                 }
 
     for subject_info in marks_info:
-        if str(subject_info['estimate_value_name']).lower() not in bad_estimate_value_name:
-            if subject_info['estimate_type_name'].lower() not in bad_estimate_type_name:
-                if chek_esimate_type_name(subject_info['estimate_type_name']):
-                    marks[subject_info['subject_name']].append(int(subject_info['estimate_value_name']))
+        if str(subject_info['estimate_value_name']).lower() not in bad_estimate_value_name and subject_info['estimate_type_name'].lower() not in bad_estimate_type_name and chek_esimate_type_name(subject_info['estimate_type_name']):
+                    marks[subject_info['subject_name']]['q_marks'].append(int(subject_info['estimate_value_name']))
+        else:
+            for l in subject_info['estimate_type_name'].split():
+                if l in 'четверть':
+                    marks[subject_info['subject_name']]['final'].append(int(subject_info['estimate_value_name']))
     return marks
 
 
@@ -94,16 +103,15 @@ def register_and_save_cookies(user_id):
     login, password = db.get_login_and_password(user_id)[0], db.get_login_and_password(user_id)[1]
     try:
         driver.get(url=url)
-        time.sleep(5)
+        time.sleep(3)
         get_esia = driver.find_element(By.CLASS_NAME, 'button_size_m')
         driver.execute_script("arguments[0].click();", get_esia)
-        time.sleep(10)
+        time.sleep(5)
         email_esia = driver.find_element(By.ID, 'login')
         passw_esia = driver.find_element(By.ID, 'password')
         email_esia.send_keys(login)
         passw_esia.send_keys(password)
         driver.find_element(By.CLASS_NAME, 'plain-button_wide').click()
-        time.sleep(5)
         pickle.dump(driver.get_cookies(), open(f'cookies/cookies{user_id}', 'wb'))
         params_group_id = {
             'p_page': '1'
@@ -166,9 +174,7 @@ def get_marks(quater, cookies, user_id):
         'sec-ch-ua-mobile': '?0',
     }
 
-
     group_id = db.get_group_id(user_id=user_id)[1]
-
 
     params_date_f_t = {
         'p_group_ids[]': group_id,
@@ -179,14 +185,10 @@ def get_marks(quater, cookies, user_id):
     date_f = None
     date_t = None
     for data in response_date_f_t:
-        try:
-            if int(data['education_period'].get('code')) == int(quater):
-                date_f = data.get('date_from')
-                date_t = data.get('date_to')
-                break
-        except:
-            ...
-
+        if int(data['education_period'].get('code')) == int(quater):
+            date_f = data.get('date_from')
+            date_t = data.get('date_to')
+            break
 
     p_educations = db.get_education_id(user_id=user_id)
 
@@ -207,21 +209,22 @@ def get_marks(quater, cookies, user_id):
 
     if int(total_pages) > 1:
         if total_pages > 2:
-            for subject_info in range(2, total_pages + 1):
+            for subject_page in range(2, total_pages + 1):
                 params = {
                     'p_educations[]': p_educations,
                     'p_date_from': date_f,
                     'p_date_to': date_t,
                     'p_limit': '100',
-                    'p_page': subject_info,
+                    'p_page': subject_page,
                 }
 
                 response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
                                         cookies=cookies, headers=headers).json()
                 marks_page = get_marks_dict(response=response)
                 for sub, val in marks_page.items():
-                    for mark in val:
-                        marks[sub].append(mark)
+                    q_marks = val[['q_marks'][0]]
+                    marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + q_marks
+
         else:
             params = {
                 'p_educations[]': p_educations,
@@ -234,40 +237,48 @@ def get_marks(quater, cookies, user_id):
             response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
                                     cookies=cookies, headers=headers).json()
             marks_page = get_marks_dict(response=response)
+
             for sub, val in marks_page.items():
-                for mark in val:
-                    marks[sub].append(mark)
+                q_marks = val[['q_marks'][0]]
+                final_m = val['final']
+                marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + q_marks
+                if final_m:
+                    marks[sub]['final'] = final_m
     return marks
 
 
 def sort_data(data, quater):
+    # print(2, data)
     for subject_info in data.copy():
-        try:
-            last_three = data[subject_info][2::-1]
-            count_marks = len(data[subject_info])
-            sum_marks = sum(data[subject_info])
+        # try:
+        last_three = data[subject_info]['q_marks'][2::-1]
+        count_marks = len(data[subject_info]['q_marks'])
+        sum_marks = sum(data[subject_info]['q_marks'])
 
-            data[subject_info] = [round(sum_marks / count_marks, 2), count_marks, last_three]
-        except ZeroDivisionError:
-            del data[subject_info]
+        data[subject_info]['average'] = round(sum_marks / count_marks, 2)
+        data[subject_info]['last_three'] = last_three
+        data[subject_info]['count_marks'] = count_marks
+        # except ZeroDivisionError:
+        #     del data[subject_info]
 
     if data == {}:
         data = 'нет оценок'
     sort_result = dict(sorted(data.items()))
     if quater == 20:
         res = f'Год\n\n'
-        for subject, j in sort_result.items():
-            res += f'{subject}: {j[0]} ({j[1]})\n'
+        for subject, sub_data in sort_result.items():
+            res += f"{subject}: {sub_data['average']} ({sub_data['count_marks']})\n"
         res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
     else:
         res = f'{quater} четверть\n\n'
-        for subject, s_data in sort_result.items():
-            averge = s_data[0]
-            count = s_data[1]
+        for subject, sub_data in sort_result.items():
+            average = sub_data['average']
+            count = sub_data['count_marks']
+            final_m = sub_data['final'][0]
             last_3 = ''
-            for m in s_data[2]:
+            for m in sub_data['last_three']:
                 last_3 += str(m) + ' '
-            res += f'{subject}: {averge} ({count}) {last_3}\n'
+            res += f'{subject}: {average} ({count}) {last_3} | {final_m}\n'
     res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
     return res
 

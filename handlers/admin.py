@@ -5,7 +5,7 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher import FSMContext
 from aiogram import types, Dispatcher
 from create_bot import bot
-from keyboards import kb_admin
+from keyboards import kb_admin, kb_sender_admin
 from handlers.client import db
 
 
@@ -19,7 +19,7 @@ async def sender(message):
 
 async def start_sender(message: types.Message):
     await FSMAdmin.message_send.set()
-    await bot.send_message(message.chat.id, 'Введите сообщение')
+    await bot.send_message(message.chat.id, 'Введите сообщение', reply_markup=kb_sender_admin)
 
 
 async def get_mess_send(message: types.Message, state: FSMContext):
@@ -31,7 +31,12 @@ async def get_mess_send(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, 'Рассылка окончена', reply_markup=kb_admin)
 
 
+async def cancel_handler(message: types.Message, state: FSMContext):
+    await state.finish()
+    await bot.send_message(message.chat.id, 'Отмена, так отмена', reply_markup=kb_admin)
+
 
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(start_sender, text=['Добавить рассылку'])
+    dp.register_message_handler(cancel_handler, state='*', text=['Отмена'])
     dp.register_message_handler(get_mess_send, state=FSMAdmin.message_send)
