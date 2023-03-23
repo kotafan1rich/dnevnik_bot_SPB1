@@ -274,11 +274,13 @@ def sort_data(data, quater):
         for subject, sub_data in sort_result.items():
             average = sub_data['average']
             count = sub_data['count_marks']
-            final_m = sub_data['final'][0]
+            final_m = ''
+            if sub_data['final'][0]:
+                final_m = '| ' + str(sub_data['final'][0])
             last_3 = ''
             for m in sub_data['last_three']:
                 last_3 += str(m) + ' '
-            res += f'{subject}: {average} ({count}) {last_3} | {final_m}\n'
+            res += f'{subject}: {average} ({count}) {last_3}{final_m}\n'
     res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
     return res
 
