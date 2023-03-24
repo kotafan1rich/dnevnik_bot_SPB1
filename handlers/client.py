@@ -36,7 +36,7 @@ async def get_message(message: types.Message, quater: int):
         try:
             wait_message = await bot.send_message(message.chat.id, 'Подождите...')
             res = other.get_m_result(quater, user_id=message.from_user.id)
-        except AttributeError as ex:
+        except AttributeError:
             res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
         finally:
             await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)

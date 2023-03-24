@@ -14,12 +14,8 @@ db = Database('db_dnevnik_tg_bot.db')
 
 bad_estimate_value_name = ['замечание', 'неизвестная', 'по болезни', 'зачёт']
 bad_estimate_type_name = ['годовая', 'итоговая', 'четверть', 'посещаемость']
-estimate_type_name_value = ['работа', 'задание', 'диктант', 'тест', 'чтение', 'сочинение', 'изложение', 'опрос', 'зачёт']
-
-good_value_of_estimate_type_name = []
-
-for i in estimate_type_name_value:
-    good_value_of_estimate_type_name.append(i)
+finals_estimate_type_name = ['годовая', 'итоговая', 'четверть']
+good_value_of_estimate_type_name = ['работа', 'задание', 'диктант', 'тест', 'чтение', 'сочинение', 'изложение', 'опрос', 'зачёт']
 
 
 ua = [
@@ -52,13 +48,16 @@ def get_marks_dict(response):
                                                   'final': []
                                                  }
 
-    for subject_info in marks_info:
-        if str(subject_info['estimate_value_name']).lower() not in bad_estimate_value_name and subject_info['estimate_type_name'].lower() not in bad_estimate_type_name and chek_esimate_type_name(subject_info['estimate_type_name']):
-                    marks[subject_info['subject_name']]['q_marks'].append(int(subject_info['estimate_value_name']))
+    for subject_data in marks_info:
+        estimate_value_name = subject_data['estimate_value_name']
+
+        if str(estimate_value_name).lower() not in bad_estimate_value_name and estimate_value_name.lower() not in bad_estimate_type_name and chek_esimate_type_name(subject_data['estimate_type_name']):
+            marks[subject_data['subject_name']]['q_marks'].append(int(estimate_value_name))
+
         else:
-            for l in subject_info['estimate_type_name'].split():
-                if l in 'четверть':
-                    marks[subject_info['subject_name']]['final'].append(int(subject_info['estimate_value_name']))
+            for estimate_type_name_split in subject_data['estimate_type_name'].split():
+                if estimate_type_name_split == 'четверть':
+                    marks[subject_data['subject_name']]['final'].append(int(estimate_value_name))
     return marks
 
 
@@ -117,10 +116,8 @@ def register_and_save_cookies(user_id):
             'p_page': '1'
         }
 
-        cookies = {}
+        cookies = {cookies_data['name']: str(cookies_data['value']) for cookies_data in pickle.load(open(f'cookies/cookies{user_id}', 'rb'))}
 
-        for cookies_data in pickle.load(open(f'cookies/cookies{user_id}', 'rb')):
-            cookies[cookies_data['name']] = str(cookies_data['value'])
         name = db.get_name(user_id=user_id)[0]
         response_info = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/person/related-child-list', params=params_group_id, cookies=cookies, headers=headers).json().get('data').get('items')
         students_info = None
@@ -139,9 +136,7 @@ def register_and_save_cookies(user_id):
 
 
 def convert_cookies(user_id):
-    cookies = {}
-    for cookies_data in pickle.load(open(f'cookies/cookies{user_id}', 'rb')):
-        cookies[cookies_data['name']] = str(cookies_data['value'])
+    cookies = {cookies_data['name']: str(cookies_data['value']) for cookies_data in pickle.load(open(f'cookies/cookies{user_id}', 'rb'))}
     return cookies
 
 
@@ -207,62 +202,62 @@ def get_marks(quater, cookies, user_id):
 
     total_pages = response.get('data').get('total_pages')
 
-    if int(total_pages) > 1:
-        if total_pages > 2:
-            for subject_page in range(2, total_pages + 1):
-                params = {
-                    'p_educations[]': p_educations,
-                    'p_date_from': date_f,
-                    'p_date_to': date_t,
-                    'p_limit': '100',
-                    'p_page': subject_page,
-                }
-
-                response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
-                                        cookies=cookies, headers=headers).json()
-                marks_page = get_marks_dict(response=response)
-                for sub, val in marks_page.items():
-                    q_marks = val[['q_marks'][0]]
-                    marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + q_marks
-
-        else:
+    if total_pages > 2:
+        for subject_page in range(2, total_pages + 1):
             params = {
                 'p_educations[]': p_educations,
                 'p_date_from': date_f,
                 'p_date_to': date_t,
                 'p_limit': '100',
-                'p_page': 2,
+                'p_page': subject_page,
             }
 
             response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
                                     cookies=cookies, headers=headers).json()
             marks_page = get_marks_dict(response=response)
-
-            for sub, val in marks_page.items():
-                q_marks = val[['q_marks'][0]]
-                final_m = val['final']
+            for sub, sub_data in marks_page.items():
+                q_marks = sub_data[['q_marks'][0]]
                 marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + q_marks
-                if final_m:
-                    marks[sub]['final'] = final_m
+
+    else:
+        params = {
+            'p_educations[]': p_educations,
+            'p_date_from': date_f,
+            'p_date_to': date_t,
+            'p_limit': '100',
+            'p_page': 2,
+        }
+
+        response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
+                                cookies=cookies, headers=headers).json()
+        marks_page = get_marks_dict(response=response)
+
+        for sub, sub_data in marks_page.items():
+            q_marks = sub_data[['q_marks'][0]]
+            final_m = sub_data['final']
+            marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + q_marks
+            if final_m:
+                marks[sub]['final'] = final_m
     return marks
 
 
 def sort_data(data, quater):
-    # print(2, data)
     for subject_info in data.copy():
-        # try:
-        last_three = data[subject_info]['q_marks'][2::-1]
-        count_marks = len(data[subject_info]['q_marks'])
-        sum_marks = sum(data[subject_info]['q_marks'])
+        try:
+            data_sub_info = data[subject_info]
+            last_three = data[subject_info]['q_marks'][2::-1]
+            count_marks = len(data[subject_info]['q_marks'])
+            sum_marks = sum(data[subject_info]['q_marks'])
 
-        data[subject_info]['average'] = round(sum_marks / count_marks, 2)
-        data[subject_info]['last_three'] = last_three
-        data[subject_info]['count_marks'] = count_marks
-        # except ZeroDivisionError:
-        #     del data[subject_info]
+            data_sub_info['average'] = round(sum_marks / count_marks, 2)
+            data_sub_info['last_three'] = last_three
+            data_sub_info['count_marks'] = count_marks
+        except ZeroDivisionError:
+            del data[subject_info]
 
-    if data == {}:
-        data = 'нет оценок'
+    if not data:
+        data = f'Мы пока не нашли оценок по {quater} четверти'
+        return data
     sort_result = dict(sorted(data.items()))
     if quater == 20:
         res = f'Год\n\n'
@@ -281,7 +276,7 @@ def sort_data(data, quater):
             for m in sub_data['last_three']:
                 last_3 += str(m) + ' '
             res += f'{subject}: {average} ({count}) {last_3}{final_m}\n'
-    res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
+        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
     return res
 
 
