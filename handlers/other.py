@@ -18,6 +18,20 @@ bad_estimate_type_name = ['годовая', 'итоговая', 'четверт�
 finals_estimate_type_name = ['годовая', 'итоговая', 'четверть']
 good_value_of_estimate_type_name = ['работа', 'задание', 'диктант', 'тест', 'чтение', 'сочинение', 'изложение', 'опрос', 'зачёт']
 
+
+# ua = [
+#     'Mozilla/5.0 (Windows; U; MSIE 9.0; Windows NT 9.0; en-US)',
+#     'Mozilla/5.0 (compatible; MSIE 10.0; Macintosh; Intel Mac OS X 10_7_3; Trident/6.0)',
+#     'Opera/9.80 (X11; Linux i686; U; ru) Presto/2.8.131 Version/11.11',
+#     'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.2 (KHTML, like Gecko) Chrome/22.0.1216.0 Safari/537.2',
+#     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_4) AppleWebKit/537.13 (KHTML, like Gecko) Chrome/24.0.1290.1 Safari/537.13',
+#     'Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11',
+#     'Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:16.0.1) Gecko/20121011 Firefox/16.0.1',
+#     'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:15.0) Gecko/20100101 Firefox/15.0.1',
+#     'Mozilla/5.0 (iPad; CPU OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5355d Safari/8536.25',
+#
+# ]
+
 def get_user_agent():
     with open('useragents/user_agent.txt') as f:
         user_agents = f.readlines()
@@ -78,7 +92,7 @@ def register_and_save_cookies(user_id, ua):
     options = webdriver.FirefoxOptions()
     options.add_argument(f'user-agent={ua}')
     options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument('--headless')
+    # options.add_argument('--headless')
     options.add_argument('--no-sandbox')
     # options.add_argument(f'--proxy-server={random.choice(proxies)}')
 
@@ -106,13 +120,13 @@ def register_and_save_cookies(user_id, ua):
         email_esia.send_keys(login)
         passw_esia.send_keys(password)
         driver.find_element(By.CLASS_NAME, 'plain-button_wide').click()
+        time.sleep(3)
         pickle.dump(driver.get_cookies(), open(f'cookies/cookies{user_id}', 'wb'))
         params_group_id = {
             'p_page': '1'
         }
 
         cookies = {cookies_data['name']: str(cookies_data['value']) for cookies_data in pickle.load(open(f'cookies/cookies{user_id}', 'rb'))}
-
         name = db.get_name(user_id=user_id)[0]
         response_info = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/person/related-child-list', params=params_group_id, cookies=cookies, headers=headers).json().get('data').get('items')
         students_info = None
@@ -258,14 +272,14 @@ def sort_data(data, quater):
         res = f'Год\n\n'
         for subject, sub_data in sort_result.items():
             res += f"{subject}: {sub_data['average']} ({sub_data['count_marks']})\n"
-        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
+        res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История').replace('Иностранный язык (английский язык)', 'Английский язык')
     else:
         res = f'{quater} четверть\n\n'
         for subject, sub_data in sort_result.items():
             average = sub_data['average']
             count = sub_data['count_marks']
             final_m = ''
-            if sub_data['final'][0]:
+            if sub_data['final']:
                 final_m = '| ' + str(sub_data['final'][0])
             last_3 = ''
             for m in sub_data['last_three']:

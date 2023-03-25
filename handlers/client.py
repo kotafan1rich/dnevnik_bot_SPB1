@@ -39,16 +39,16 @@ class FSMLoginEsia(StatesGroup):
 async def get_message(message: types.Message, quater: int):
     res = None
     wait_message = None
-    # try:
-    #     try:
-    wait_message = await bot.send_message(message.chat.id, 'Подождите...')
-    res = other.get_m_result(quater, user_id=message.from_user.id)
-# except AttributeError:
-#     res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
-# finally:
-    await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)
-    # except exceptions.MessageTextIsEmpty:
-    #     await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text='Ошибка... оценки не найдены, попробуйте ещё раз')
+    try:
+        try:
+            wait_message = await bot.send_message(message.chat.id, 'Подождите...')
+            res = other.get_m_result(quater, user_id=message.from_user.id)
+        except AttributeError:
+            res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
+        finally:
+            await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)
+    except exceptions.MessageTextIsEmpty:
+        await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text='Ошибка... оценки не найдены, попробуйте ещё раз')
 
 
 async def add_login_password_db(state: FSMContext, user_id):
