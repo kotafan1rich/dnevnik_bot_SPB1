@@ -265,7 +265,7 @@ def sort_data(data, quater):
             del data[subject_info]
 
     if not data:
-        data = f'Мы пока не нашли оценок по {quater} четверти'
+        data = f'Мы пока не нашли оценки за {quater}-ую четверть'
         return data
     sort_result = dict(sorted(data.items()))
     if quater == 20:
