@@ -8,6 +8,7 @@ from db import Database
 import os.path
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 db = Database('db_dnevnik_tg_bot.db')
@@ -17,18 +18,11 @@ bad_estimate_type_name = ['годовая', 'итоговая', 'четверт�
 finals_estimate_type_name = ['годовая', 'итоговая', 'четверть']
 good_value_of_estimate_type_name = ['работа', 'задание', 'диктант', 'тест', 'чтение', 'сочинение', 'изложение', 'опрос', 'зачёт']
 
-
-ua = [
-    'Mozilla/5.0 (Windows; U; MSIE 9.0; Windows NT 9.0; en-US)',
-    'Mozilla/5.0 (compatible; MSIE 10.0; Macintosh; Intel Mac OS X 10_7_3; Trident/6.0)',
-    'Opera/9.80 (X11; Linux i686; U; ru) Presto/2.8.131 Version/11.11',
-    'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.2 (KHTML, like Gecko) Chrome/22.0.1216.0 Safari/537.2',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_4) AppleWebKit/537.13 (KHTML, like Gecko) Chrome/24.0.1290.1 Safari/537.13',
-    'Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11',
-    'Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:16.0.1) Gecko/20121011 Firefox/16.0.1',
-    'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:15.0) Gecko/20100101 Firefox/15.0.1',
-    'Mozilla/5.0 (iPad; CPU OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5355d Safari/8536.25'
-]
+def get_user_agent():
+    with open('useragents/user_agent.txt') as f:
+        user_agents = f.readlines()
+        ua = random.choice(user_agents).strip()
+    return ua
 
 def chek_esimate_type_name(estimate_type_name):
     for good_value in good_value_of_estimate_type_name:
@@ -61,7 +55,8 @@ def get_marks_dict(response):
     return marks
 
 
-def register_and_save_cookies(user_id):
+def register_and_save_cookies(user_id, ua):
+
     headers = {
         'Accept': '*/*',
         'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -72,7 +67,7 @@ def register_and_save_cookies(user_id):
         'Sec-Fetch-Dest': 'empty',
         'Sec-Fetch-Mode': 'cors',
         'Sec-Fetch-Site': 'same-origin',
-        'User-agent': random.choice(ua),
+        'User-agent': ua,
         'X-KL-Ajax-Request': 'Ajax_Request',
         'X-Requested-With': 'XMLHttpRequest',
         'sec-ch-ua': '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
@@ -81,7 +76,7 @@ def register_and_save_cookies(user_id):
 
     # options = webdriver.ChromeOptions()
     options = webdriver.FirefoxOptions()
-    options.add_argument(f'user-agent={random.choice(ua)}')
+    options.add_argument(f'user-agent={ua}')
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--headless')
     options.add_argument('--no-sandbox')
@@ -140,18 +135,18 @@ def convert_cookies(user_id):
     return cookies
 
 
-def get_data(quater, user_id):
+def get_data(quater, user_id, ua):
     if not os.path.exists(f'cookies/cookies{user_id}'):
-        register_and_save_cookies(user_id)
+        register_and_save_cookies(user_id, ua)
         cookies = convert_cookies(user_id=user_id)
-        data = get_marks(quater=quater, cookies=cookies, user_id=user_id)
+        data = get_marks(quater=quater, cookies=cookies, user_id=user_id, ua=ua)
     else:
         cookies = convert_cookies(user_id=user_id)
-        data = get_marks(quater, cookies, user_id=user_id)
+        data = get_marks(quater, cookies, user_id=user_id, ua=ua)
     return data
 
 
-def get_marks(quater, cookies, user_id):
+def get_marks(quater, cookies, user_id, ua):
     headers = {
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'ru,en;q=0.9',
@@ -162,7 +157,7 @@ def get_marks(quater, cookies, user_id):
         'Sec-Fetch-Dest': 'empty',
         'Sec-Fetch-Mode': 'cors',
         'Sec-Fetch-Site': 'same-origin',
-        'User-agent': random.choice(ua),
+        'User-agent': ua,
         'X-KL-Ajax-Request': 'Ajax_Request',
         'X-Requested-With': 'XMLHttpRequest',
         'sec-ch-ua': '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
@@ -282,7 +277,8 @@ def sort_data(data, quater):
 
 def get_m_result(quater: int, user_id):
     # try:
-    result: dict = get_data(user_id=user_id, quater=quater)
+    ua = get_user_agent()
+    result: dict = get_data(user_id=user_id, quater=quater, ua=ua)
     res = sort_data(data=result, quater=quater)
     return res
 

@@ -6,7 +6,7 @@ from aiogram import types, Dispatcher
 from aiogram.utils import exceptions
 from create_bot import bot
 from handlers import other
-from keyboards import kb_client, kb_client_login, kb_admin
+from keyboards import kb_client, kb_client_login, kb_admin, kb_client_settings
 from db import Database
 
 db = Database('db_dnevnik_tg_bot.db')
@@ -22,6 +22,13 @@ help = '''
 !!! Полученные данные: парооль и логин от гос услуг, не используютя в посторонних целях и не передаются третим лицам !!!
 '''
 
+settings = '''
+Вы можете:
+Изменить логин или пароль от гос. услуг
+Изменить имя ученика, которого хотите получать оценки
+Удалить Cookies
+'''
+
 
 class FSMLoginEsia(StatesGroup):
     login = State()
@@ -32,16 +39,16 @@ class FSMLoginEsia(StatesGroup):
 async def get_message(message: types.Message, quater: int):
     res = None
     wait_message = None
-    try:
-        try:
-            wait_message = await bot.send_message(message.chat.id, 'Подождите...')
-            res = other.get_m_result(quater, user_id=message.from_user.id)
-        except AttributeError:
-            res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
-        finally:
-            await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)
-    except exceptions.MessageTextIsEmpty:
-        await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text='Ошибка... оценки не найдены, попробуйте ещё раз')
+    # try:
+    #     try:
+    wait_message = await bot.send_message(message.chat.id, 'Подождите...')
+    res = other.get_m_result(quater, user_id=message.from_user.id)
+# except AttributeError:
+#     res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
+# finally:
+    await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)
+    # except exceptions.MessageTextIsEmpty:
+    #     await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text='Ошибка... оценки не найдены, попробуйте ещё раз')
 
 
 async def add_login_password_db(state: FSMContext, user_id):
@@ -145,6 +152,9 @@ async def del_cookies(message: types.Message):
     finally:
         await bot.send_message(user_id, res, reply_markup=kb_client)
 
+async def get_settings(message: types.Message):
+    await bot.send_message(message.from_user.id, settings, reply_markup=kb_client_settings)
+
 
 async def unknow_command(message: types.Message):
     await bot.send_message(message.chat.id, 'Упс... Я тебя не понял')
@@ -153,7 +163,7 @@ async def unknow_command(message: types.Message):
 
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_start, commands='start')
-    dp.register_message_handler(get_help, text=['help'])
+    dp.register_message_handler(get_help, text=['Помощь'])
     dp.register_message_handler(del_cookies, text=['Удалить Cookies'])
     dp.register_message_handler(cancel_handler, state='*', text=['Отмена'])
     dp.register_message_handler(add_name, text=['Изменить имя'], state=None)
@@ -163,4 +173,5 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_login, state=FSMLoginEsia.login)
     dp.register_message_handler(cancel_handler, state='*', text=['Отмена'])
     dp.register_message_handler(get_marks_quater, text=['1 четверть', '2 четверть','3 четверть','4 четверть', 'Год'])
+    dp.register_message_handler(get_settings, text=['Настройки'])
     dp.register_message_handler(unknow_command)
