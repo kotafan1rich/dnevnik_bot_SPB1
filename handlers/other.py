@@ -247,6 +247,7 @@ def get_marks(quater, cookies, user_id, ua):
             marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + q_marks
             if final_m:
                 marks[sub]['final'] = final_m
+
     return marks
 
 
@@ -254,7 +255,7 @@ def sort_data(data, quater):
     for subject_info in data.copy():
         try:
             data_sub_info = data[subject_info]
-            last_three = data[subject_info]['q_marks'][2::-1]
+            last_three = list(map(str, data[subject_info]['q_marks'][2::-1]))
             count_marks = len(data[subject_info]['q_marks'])
             sum_marks = sum(data[subject_info]['q_marks'])
 
@@ -265,26 +266,27 @@ def sort_data(data, quater):
             del data[subject_info]
 
     if not data:
-        data = f'Мы пока не нашли оценки за {quater}-ую четверть'
-        return data
+        return f'Мы пока не нашли оценки за {quater}-ую четверть'
     sort_result = dict(sorted(data.items()))
+
     if quater == 20:
         res = f'Год\n\n'
         for subject, sub_data in sort_result.items():
             res += f"{subject}: {sub_data['average']} ({sub_data['count_marks']})\n"
         res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История').replace('Иностранный язык (английский язык)', 'Английский язык')
     else:
+        all_finals = [marks_info['final'][0] for marks_info in data.values() if bool(marks_info['final'])]
+        finals_averge = round(sum(all_finals) / len(all_finals), 2)
         res = f'{quater} четверть\n\n'
         for subject, sub_data in sort_result.items():
             average = sub_data['average']
             count = sub_data['count_marks']
             final_m = ''
             if sub_data['final']:
-                final_m = '| ' + str(sub_data['final'][0])
-            last_3 = ''
-            for m in sub_data['last_three']:
-                last_3 += str(m) + ' '
-            res += f'{subject}: {average} ({count}) {last_3}{final_m}\n'
+                final_m = '= ' + str(sub_data['final'][0])
+            last_3 = ' '.join(sub_data['last_three'])
+            res += f'{subject}: {last_3} ({count})  {average} {final_m}\n'
+        res += f'Ср. балл аттестации - {finals_averge}'
         res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство', 'ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
     return res
 

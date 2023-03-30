@@ -3,7 +3,6 @@ import os
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher import FSMContext
 from aiogram import types, Dispatcher
-from aiogram.utils import exceptions
 from create_bot import bot
 from handlers import other
 from keyboards import kb_client, kb_client_login, kb_admin, kb_client_settings
@@ -13,21 +12,24 @@ db = Database('db_dnevnik_tg_bot.db')
 
 admins = [1324716819,]
 
-help = '''
-[1] Чтобы начать пользоваться ботом необходимо добавить логин и пароль от гос услуг для доступа к вашим оценкам. 
-[2] Для получения своего среднего балла нажмите на соответствующие кнопки.
-[3] Оценки выводятся в формате:
-'ПРЕДМЕТ': 'СР.БАЛЛ' ('КОЛ-ВО') 'ПОСЛЕДНИЕ 3' | 'ЧЕТВЕРТНАЯ'
-[4] Все вопросы и отзывы сюда --> https://t.me/Gohdot.
-!!! Полученные данные: парооль и логин от гос услуг, не используютя в посторонних целях и не передаются третим лицам !!!
+HELP = '''
+!!! Работает только через ЕСИА !!!
+1) Чтобы начать пользоваться ботом необходимо добавить логин и пароль от госю услуг для доступа к твоим оценкам с сайта 'Петербуржское образование' https://dnevnik2.petersburgedu.ru.
+2) Для получения своего среднего балла нажми на соответствующие кнопки. Если кнопок нету введи любое сообщение и они должны появиться.
+3) Оценки выводятся в формате:
+ПРЕДМЕТ: ПОСЛЕДНИЕ_3 (КОЛ-ВО)  СР.БАЛЛ = ЧЕТВЕРТНАЯ
+4) Все вопросы и отзывы сюда --> https://t.me/Gohdot.
+!!! Полученные данные: парооль и логин от гос услуг, не используютя в посторонних целях и не передаются третьим лицам !!!
 '''
 
-settings = '''
-Вы можете:
-Изменить логин или пароль от гос. услуг
-Изменить имя ученика, которого хотите получать оценки
-Удалить Cookies
+SETTINGS = '''
+Ты можешь:
+- Изменить логин или пароль от гос. услуг
+- Изменить имя ученика, которого хотите получать оценки
+- Удалить Cookies
 '''
+
+ERROR_MES = 'Ошибка... Оценки не найдены, попробуй ещё раз'
 
 
 class FSMLoginEsia(StatesGroup):
@@ -37,18 +39,15 @@ class FSMLoginEsia(StatesGroup):
 
 
 async def get_message(message: types.Message, quater: int):
-    res = None
     wait_message = None
+    res = ERROR_MES
     try:
-        try:
-            wait_message = await bot.send_message(message.chat.id, 'Подождите...')
-            res = other.get_m_result(quater, user_id=message.from_user.id)
-        except AttributeError:
-            res = 'Ошибка... Оценки не найдены, попробуйте ещё раз'
-        finally:
-            await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text=res)
-    except exceptions.MessageTextIsEmpty:
-        await bot.edit_message_text(chat_id=message.chat.id, message_id=wait_message.message_id, text='Ошибка... оценки не найдены, попробуйте ещё раз')
+        wait_message = await bot.send_message(message.chat.id, 'Подожди...')
+        res = other.get_m_result(quater, user_id=message.from_user.id)
+    except:
+        pass
+    finally:
+        await bot.edit_message_text(chat_id=message.from_user.id, message_id=wait_message.message_id, text=res)
 
 
 async def add_login_password_db(state: FSMContext, user_id):
@@ -138,7 +137,7 @@ async def get_marks_quater(message: types.Message):
 
 
 async def get_help(message: types.Message):
-    await bot.send_message(message.chat.id, help)
+    await bot.send_message(message.chat.id, HELP)
 
 
 async def del_cookies(message: types.Message):
@@ -153,12 +152,12 @@ async def del_cookies(message: types.Message):
         await bot.send_message(user_id, res, reply_markup=kb_client)
 
 async def get_settings(message: types.Message):
-    await bot.send_message(message.from_user.id, settings, reply_markup=kb_client_settings)
+    await bot.send_message(message.from_user.id, SETTINGS, reply_markup=kb_client_settings)
 
 
 async def unknow_command(message: types.Message):
     await bot.send_message(message.chat.id, 'Упс... Я тебя не понял')
-    await bot.send_message(message.chat.id, help, reply_markup=kb_client)
+    await bot.send_message(message.chat.id, HELP, reply_markup=kb_client)
 
 
 def register_handlers_client(dp: Dispatcher):
