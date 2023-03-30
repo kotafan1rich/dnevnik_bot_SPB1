@@ -283,7 +283,7 @@ def sort_data(data, quater):
             count = sub_data['count_marks']
             final_m = ''
             if sub_data['final']:
-                final_m = '= ' + str(sub_data['final'][0])
+                final_m = '=> ' + str(sub_data['final'][0])
             last_3 = ' '.join(sub_data['last_three'])
             res += f'{subject}: {last_3} ({count})  {average} {final_m}\n'
         res += f'Ср. балл аттестации - {finals_averge}'
