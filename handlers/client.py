@@ -101,7 +101,7 @@ async def get_name(message: types.Message, state: FSMContext):
         except FileNotFoundError:
             ...
         await state.finish()
-        await bot.send_message(message.chat.id, 'Имя добавлено.', reply_markup=kb_client)
+        await bot.send_message(message.chat.id, 'Добавлено', reply_markup=kb_client)
 
 async def login_users(message: types.Message):
     await FSMLoginEsia.login.set()
@@ -119,8 +119,8 @@ async def get_password(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['password'] = message.text
     await add_login_password_db(state=state, user_id=message.from_user.id)
-    await bot.send_message(message.chat.id, 'Логин и пароль добавлены', reply_markup=kb_client)
-    await state.finish()
+    await bot.send_message(message.chat.id, 'Введите имя человека, чьи оценки будете получать', reply_markup=kb_client_login)
+    await FSMLoginEsia.next()
 
 
 async def cancel_handler(message: types.Message, state: FSMContext):
