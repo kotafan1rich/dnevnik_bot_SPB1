@@ -92,7 +92,7 @@ def register_and_save_cookies(user_id, ua):
     options = webdriver.FirefoxOptions()
     options.add_argument(f'user-agent={ua}')
     options.add_argument('--disable-blink-features=AutomationControlled')
-    # options.add_argument('--headless')
+    options.add_argument('--headless')
     options.add_argument('--no-sandbox')
     # options.add_argument(f'--proxy-server={random.choice(proxies)}')
 
