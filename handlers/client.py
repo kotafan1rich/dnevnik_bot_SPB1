@@ -10,14 +10,14 @@ from db import Database
 
 db = Database('db_dnevnik_tg_bot.db')
 
-admins = [1324716819,]
+admins = (1324716819,)
 
 HELP = '''
 !!! Работает только через ЕСИА !!!
 1) Чтобы начать пользоваться ботом необходимо добавить логин и пароль от госю услуг для доступа к твоим оценкам с сайта 'Петербуржское образование' https://dnevnik2.petersburgedu.ru.
 2) Для получения своего среднего балла нажми на соответствующие кнопки. Если кнопок нету введи любое сообщение и они должны появиться.
 3) Оценки выводятся в формате:
-ПРЕДМЕТ: ПОСЛЕДНИЕ_3 (КОЛ-ВО)  СР.БАЛЛ = ЧЕТВЕРТНАЯ
+ПРЕДМЕТ: ПОСЛЕДНИЕ_3 (КОЛ-ВО)  СР.БАЛЛ => ЧЕТВЕРТНАЯ
 4) Все вопросы и отзывы сюда --> https://t.me/Gohdot.
 !!! Полученные данные: парооль и логин от гос услуг, не используютя в посторонних целях и не передаются третьим лицам !!!
 '''
@@ -38,16 +38,16 @@ class FSMLoginEsia(StatesGroup):
     name = State()
 
 
-async def get_message(message: types.Message, quater: int):
+async def get_message(message: types.Message, quater: str):
     wait_message = None
     res = ERROR_MES
-    try:
-        wait_message = await bot.send_message(message.chat.id, 'Подожди...')
-        res = other.get_m_result(quater, user_id=message.from_user.id)
-    except:
-        pass
-    finally:
-        await bot.edit_message_text(chat_id=message.from_user.id, message_id=wait_message.message_id, text=res)
+    # try:
+    wait_message = await bot.send_message(message.chat.id, 'Подожди...')
+    res = other.get_m_result(quater=quater, user_id=message.from_user.id)
+# except:
+#     pass
+# finally:
+    await bot.edit_message_text(chat_id=message.from_user.id, message_id=wait_message.message_id, text=res)
 
 
 async def add_login_password_db(state: FSMContext, user_id):
@@ -129,11 +129,7 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 async def get_marks_quater(message: types.Message):
     quater = message.text.split()[0]
-    if quater == 'Год':
-        quater = 20
-        await get_message(message, quater)
-    else:
-        await get_message(message, int(quater))
+    await get_message(message, quater)
 
 
 async def get_help(message: types.Message):
