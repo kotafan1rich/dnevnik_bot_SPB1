@@ -27,18 +27,18 @@ class Marks:
     finals_estimate_type_name = ['годовая', 'итоговая', 'четверть']
     good_value_of_estimate_type_name = ['работа', 'задание', 'диктант', 'тест', 'чтение', 'сочинение', 'изложение', 'опрос', 'зачёт']
 
-    group_id = None
-    education_id = None
-    cookies = None
-    user_agent = None
-    date_f = None
-    date_t = None
 
     def __init__(self, user_id, quater, login, password):
         self.user_id = user_id
         self.quater = self.QUATER_CODES[quater]
         self.login = login
         self.password = password
+        self.group_id = None
+        self.education_id = None
+        self.cookies = None
+        self.user_agent = None
+        self.date_f = None
+        self.date_t = None
 
     def chek_esimate_type_name(self, estimate_type_name):
         for good_value in self.good_value_of_estimate_type_name:
