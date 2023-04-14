@@ -41,13 +41,13 @@ class FSMLoginEsia(StatesGroup):
 async def get_message(message: types.Message, quater: str):
     wait_message = None
     res = ERROR_MES
-    # try:
-    wait_message = await bot.send_message(message.chat.id, 'Подожди...')
-    res = other.get_m_result(quater=quater, user_id=message.from_user.id)
-# except:
-#     pass
-# finally:
-    await bot.edit_message_text(chat_id=message.from_user.id, message_id=wait_message.message_id, text=res)
+    try:
+        wait_message = await bot.send_message(message.chat.id, 'Подожди...')
+        res = other.get_m_result(quater=quater, user_id=message.from_user.id)
+    except:
+        pass
+    finally:
+        await bot.edit_message_text(chat_id=message.from_user.id, message_id=wait_message.message_id, text=res)
 
 
 async def add_login_password_db(state: FSMContext, user_id):

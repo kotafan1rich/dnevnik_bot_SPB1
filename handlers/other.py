@@ -28,7 +28,7 @@ class Marks:
     good_value_of_estimate_type_name = ['работа', 'задание', 'диктант', 'тест', 'чтение', 'сочинение', 'изложение', 'опрос', 'зачёт']
 
 
-    def __init__(self, user_id, quater, login, password):
+    def __init__(self, user_id: int, quater: str, login: str, password: str):
         self.user_id = user_id
         self.quater = self.QUATER_CODES[quater]
         self.login = login
@@ -39,8 +39,9 @@ class Marks:
         self.user_agent = None
         self.date_f = None
         self.date_t = None
+        self.headers = None
 
-    def chek_esimate_type_name(self, estimate_type_name):
+    def chek_esimate_type_name(self, estimate_type_name: str):
         for good_value in self.good_value_of_estimate_type_name:
             if good_value in estimate_type_name.lower():
                 return True
@@ -65,12 +66,9 @@ class Marks:
         if self.quater == 20:
             res = f'Год\n\n'
             for subject, sub_data in sort_result.items():
-                res += f"{subject}: {sub_data['average']} ({sub_data['count_marks']})\n"
-            res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство',
-                                                                                      'ИЗО').replace(
-                'Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace(
-                'История России. Всеобщая история', 'История').replace('Иностранный язык (английский язык)',
-                                                                       'Английский язык')
+                finals = '=> ' + ' '.join(map(str, sub_data['final'][::-1]))
+                res += f"{subject}: {sub_data['average']} ({sub_data['count_marks']}) {finals}\n"
+            res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство','ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История').replace('Иностранный язык (английский язык)', 'Английский язык')
         else:
             all_finals = [marks_info['final'][0] for marks_info in data.values() if bool(marks_info['final'])]
             finals_averge = round(sum(all_finals) / len(all_finals), 2) if all_finals else None
@@ -88,7 +86,7 @@ class Marks:
             res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство','ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
         return res
 
-    def get_marks_dict(self, response):
+    def get_marks_dict(self, response: dict):
         bad_estimate_value_name = self.bad_estimate_value_name
         bad_estimate_type_name = self.bad_estimate_type_name
 
@@ -110,7 +108,7 @@ class Marks:
 
             else:
                 for estimate_type_name_split in subject_data['estimate_type_name'].split():
-                    if estimate_type_name_split == 'четверть':
+                    if estimate_type_name_split in ['четверть', 'Годовая']:
                         marks[subject_data['subject_name']]['final'].append(int(estimate_value_name))
         return marks
 
@@ -275,8 +273,8 @@ class Marks:
                                         cookies=self.cookies, headers=self.headers).json()
                 marks_page = self.get_marks_dict(response=response)
                 for sub, sub_data in marks_page.items():
-                    q_marks = sub_data[['q_marks'][0]]
-                    marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + q_marks
+                    marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + sub_data[['q_marks'][0]]
+                    marks[sub]['final'] = list(marks[sub]['final']) + sub_data['final']
 
         else:
             params = {
@@ -301,7 +299,7 @@ class Marks:
         return marks
 
 
-def get_m_result(user_id, quater):
+def get_m_result(user_id: int, quater: str):
     login, password = db.get_login_and_password(user_id)
     mark = Marks(user_id=user_id, quater=quater, login=login, password=password)
     mark.save_cookies()
