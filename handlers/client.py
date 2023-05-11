@@ -29,7 +29,7 @@ SETTINGS = '''
 - Удалить Cookies
 '''
 
-ERROR_MES = 'Ошибка... Оценки не найдены, попробуй ещё раз'
+ERROR_MES = 'Ошибка... Оценки не найдены, попробуй ещё раз.'
 
 
 class FSMLoginEsia(StatesGroup):
