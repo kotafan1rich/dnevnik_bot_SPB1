@@ -167,21 +167,22 @@ class Marks:
                 passw_esia.send_keys(self.password)
                 driver.find_element(By.CLASS_NAME, 'plain-button_wide').click()
                 time.sleep(3)
+                driver.find_element(By.CLASS_NAME, 'plain-button-inline').click()
+                time.sleep(3)
                 pickle.dump(driver.get_cookies(), open(f'cookies/cookies{self.user_id}', 'wb'))
                 params_group_id = {
                     'p_page': '1'
                 }
 
-                cookies = {cookies_data['name']: str(cookies_data['value']) for cookies_data in
-                           pickle.load(open(f'cookies/cookies{self.user_id}', 'rb'))}
-                name = 'Алексей'
-                response_info = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/person/related-child-list',
-                                             params=params_group_id, cookies=cookies, headers=self.headers).json().get('data').get('items')
+                cookies = {cookies_data['name']: str(cookies_data['value']) for cookies_data in pickle.load(open(f'cookies/cookies{self.user_id}', 'rb'))}
+                name = db.get_name(user_id=self.user_id)[0]
+                response_info = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/person/related-child-list', params=params_group_id, cookies=cookies, headers=self.headers).json().get('data').get('items')
                 students_info = None
                 for data in response_info:
                     if data.get('firstname') == name:
                         students_info = data
                         break
+
                 group_id = students_info['educations'][0]['group_id']
                 education_id = students_info['educations'][0]['education_id']
                 db.set_group_id(user_id=self.user_id, group_id=group_id)
