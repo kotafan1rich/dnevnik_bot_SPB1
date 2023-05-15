@@ -39,6 +39,7 @@ class Marks:
         self.user_agent = None
         self.date_f = None
         self.date_t = None
+        self.p_periods = None
         self.headers = None
 
     def chek_esimate_type_name(self, estimate_type_name: str):
@@ -65,9 +66,15 @@ class Marks:
 
         if self.quater == 20:
             res = f'Год\n\n'
+            all_finals = [i['final'][0] for i in sort_result.values() if len(i['final']) == 5]
+            finals_averge = round(sum(all_finals) / len(all_finals), 2) if all_finals else None
             for subject, sub_data in sort_result.items():
-                finals = '=> ' + ' '.join(map(str, sub_data['final'][::-1]))
-                res += f"{subject}: {sub_data['average']} ({sub_data['count_marks']}) {finals}\n"
+
+                finals_q = '=> ' + ' '.join(map(str, sub_data['final'][3::-1])) if len(sub_data['final']) > 4 else '=> ' + ' '.join(map(str, sub_data['final'][::-1]))
+                finals_y = ('| ' + ''.join(str(sub_data['final'][0]))) if len(sub_data['final']) > 4 else ''
+                res += f"<i>{subject}</i> {sub_data['average']} ({sub_data['count_marks']}) {finals_q} {finals_y}\n"
+            if finals_averge:
+                res += f'\nСр. балл аттестации - {finals_averge}'
             res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство','ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История').replace('Иностранный язык (английский язык)', 'Английский язык')
         else:
             all_finals = [marks_info['final'][0] for marks_info in data.values() if bool(marks_info['final'])]
@@ -80,25 +87,16 @@ class Marks:
                 if sub_data['final']:
                     final_m = '=> ' + str(sub_data['final'][0])
                 last_3 = ' '.join(sub_data['last_three'])
-                res += f'{subject}: {last_3} ({count})  {average} {final_m}\n'
+                res += f'<i>{subject}</i>  {last_3} ({count})  <i>{average}</i> {final_m}\n'
             if finals_averge:
                 res += f'\nСр. балл аттестации - {finals_averge}'
             res = res.replace('Основы безопасности жизнедеятельности', 'ОБЖ').replace('Изобразительное искусство','ИЗО').replace('Физическая культура', 'Физ-ра').replace('Иностранный язык (английский)', 'Английский язык').replace('История России. Всеобщая история', 'История')
         return res
 
-    def get_marks_dict(self, response: dict):
+    def get_marks_dict(self, response: dict, marks: dict):
         bad_estimate_value_name = self.bad_estimate_value_name
         bad_estimate_type_name = self.bad_estimate_type_name
-
-        marks = {}
         marks_info = response.get('data').get('items')
-        for info_marks_all in marks_info:
-            marks[info_marks_all['subject_name']] = {'q_marks': [],
-                                                     'last_three': [],
-                                                     'count_marks': [],
-                                                     'average': [],
-                                                     'final': []
-                                                     }
 
         for subject_data in marks_info:
             estimate_value_name = subject_data['estimate_value_name']
@@ -110,6 +108,7 @@ class Marks:
                 for estimate_type_name_split in subject_data['estimate_type_name'].split():
                     if estimate_type_name_split in ['четверть', 'Годовая']:
                         marks[subject_data['subject_name']]['final'].append(int(estimate_value_name))
+
         return marks
 
     def save_cookies(self):
@@ -189,7 +188,7 @@ class Marks:
                 db.set_education_id(user_id=self.user_id, education_id=education_id)
                 self.cookies = cookies
 
-            except IndexError:
+            except TypeError:
                 ...
             finally:
                 driver.quit()
@@ -230,7 +229,7 @@ class Marks:
             'sec-ch-ua-mobile': '?0',
         }
 
-        group_id = db.get_group_id(self.user_id)
+        group_id = db.get_group_id(self.user_id)[1]
 
         params_date_f_t = {
             'p_group_ids[]': group_id,
@@ -240,12 +239,15 @@ class Marks:
 
         for data in response_date_f_t:
             if int(data['education_period'].get('code')) == int(self.quater):
+
                 self.date_f = data.get('date_from')
                 self.date_t = data.get('date_to')
+                self.p_periods = str(data.get('identity').get('id'))
                 break
 
     def get_marks(self):
         p_educations = db.get_education_id(self.user_id)[0]
+        p_groups = db.get_group_id(self.user_id)[1]
         params = {
             'p_educations[]': p_educations,
             'p_date_from': self.date_f,
@@ -256,11 +258,29 @@ class Marks:
 
         response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params, cookies=self.cookies, headers=self.headers).json()
 
-        marks = self.get_marks_dict(response=response)
+        params_list_subjects = {
+            'p_limit': '100',
+            'p_page': '1',
+            'p_educations[]': p_educations,
+            'p_groups[]': p_groups,
+            'p_periods[]': self.p_periods,
+        }
+        list_subjects = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/subject/list-studied',params=params_list_subjects,cookies=self.cookies,headers=self.headers).json().get('data').get('items')
+
+        marks = {}
+        for info_marks_all in list_subjects:
+            marks[info_marks_all['name']] = {'q_marks': [],
+                                                     'last_three': [],
+                                                     'count_marks': [],
+                                                     'average': [],
+                                                     'final': []
+                                                     }
+
+        marks = self.get_marks_dict(response=response, marks=marks)
 
         total_pages = response.get('data').get('total_pages')
 
-        if total_pages > 2:
+        if total_pages > 1:
             for subject_page in range(2, total_pages + 1):
                 params = {
                     'p_educations[]': p_educations,
@@ -272,30 +292,7 @@ class Marks:
 
                 response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
                                         cookies=self.cookies, headers=self.headers).json()
-                marks_page = self.get_marks_dict(response=response)
-                for sub, sub_data in marks_page.items():
-                    marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + sub_data[['q_marks'][0]]
-                    marks[sub]['final'] = list(marks[sub]['final']) + sub_data['final']
-
-        else:
-            params = {
-                'p_educations[]': p_educations,
-                'p_date_from': self.date_f,
-                'p_date_to': self.date_t,
-                'p_limit': '100',
-                'p_page': 2,
-            }
-
-            response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
-                                    cookies=self.cookies, headers=self.headers).json()
-            marks_page = self.get_marks_dict(response=response)
-
-            for sub, sub_data in marks_page.items():
-                q_marks = sub_data[['q_marks'][0]]
-                final_m = sub_data['final']
-                marks[sub]['q_marks'] = list(marks[sub]['q_marks']) + q_marks
-                if final_m:
-                    marks[sub]['final'] = final_m
+                marks = self.get_marks_dict(response=response, marks=marks)
 
         return marks
 
