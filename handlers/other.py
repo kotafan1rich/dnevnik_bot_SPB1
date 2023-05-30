@@ -13,6 +13,94 @@ load_dotenv()
 
 db = Database('db_dnevnik_tg_bot.db')
 
+class Cookies:
+    def __init__(self, user_id):
+        with open('useragents/user_agent.txt') as f:
+            user_agents = f.readlines()
+        user_agent = random.choice(user_agents).strip()
+        self.user_agent = user_agent
+        self.user_id = user_id
+        self.headers = {
+            'Accept': '*/*',
+            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Access-Control-Allow-Origin': '*',
+            'Connection': 'keep-alive',
+            'Content-Type': 'text/plain',
+            'Referer': 'https://dnevnik2.petersburgedu.ru/estimate',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin',
+            'User-agent': user_agent,
+            'X-KL-Ajax-Request': 'Ajax_Request',
+            'X-Requested-With': 'XMLHttpRequest',
+            'sec-ch-ua': '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
+            'sec-ch-ua-mobile': '?0',
+        }
+
+    def save_cookies(self, login, password):
+        if not os.path.exists(f'cookies/cookies{self.user_id}'):
+            ua = self.user_agent
+
+
+            # options = webdriver.ChromeOptions()
+            options = webdriver.FirefoxOptions()
+            options.add_argument(f'user-agent={ua}')
+            options.add_argument('--disable-blink-features=AutomationControlled')
+            options.add_argument('--headless')
+            options.add_argument('--no-sandbox')
+            # options.add_argument(f'--proxy-server={random.choice(proxies)}')
+
+            # driver = webdriver.Chrome(
+            #     executable_path=EX_PATH_DRIVER,
+            #     options=options
+            # )
+
+            driver = webdriver.Firefox(
+                executable_path=os.getenv('EX_PATH_DRIVER'),
+                options=options,
+            )
+
+            url = 'https://dnevnik2.petersburgedu.ru'
+
+            try:
+                driver.get(url=url)
+                time.sleep(3)
+                get_esia = driver.find_element(By.CLASS_NAME, 'button_size_m')
+                driver.execute_script("arguments[0].click();", get_esia)
+                time.sleep(5)
+                email_esia = driver.find_element(By.ID, 'login')
+                passw_esia = driver.find_element(By.ID, 'password')
+                email_esia.send_keys(login)
+                passw_esia.send_keys(password)
+                driver.find_element(By.CLASS_NAME, 'plain-button_wide').click()
+                time.sleep(3)
+                driver.find_element(By.CLASS_NAME, 'plain-button-inline').click()
+                time.sleep(3)
+                pickle.dump(driver.get_cookies(), open(f'cookies/cookies{self.user_id}', 'wb'))
+                params_group_id = {
+                    'p_page': '1'
+                }
+
+                cookies = self.get_cookies(self.user_id)
+                name = db.get_name(user_id=self.user_id)[0]
+                response_info = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/person/related-child-list', params=params_group_id, cookies=cookies, headers=self.headers).json().get('data').get('items')
+
+                for students_info in response_info:
+                    if students_info.get('firstname') == name:
+                        group_id = students_info['educations'][0]['group_id']
+                        education_id = students_info['educations'][0]['education_id']
+                        db.set_group_id(user_id=self.user_id, group_id=group_id)
+                        db.set_education_id(user_id=self.user_id, education_id=education_id)
+            except TypeError:
+                ...
+            finally:
+                driver.quit()
+    @staticmethod
+    def get_cookies(user_id):
+        cookies = {cookies_data['name']: str(cookies_data['value']) for cookies_data in pickle.load(open(f'cookies/cookies{user_id}', 'rb'))}
+        return cookies
+
+
 class Marks:
     QUATER_CODES = {
         '1': 1,
@@ -36,14 +124,32 @@ class Marks:
         self.group_id = None
         self.education_id = None
         self.cookies = None
-        self.user_agent = None
+        with open('useragents/user_agent.txt') as f:
+            user_agents = f.readlines()
+        self.user_agent = random.choice(user_agents).strip()
         self.date_f = None
         self.date_t = None
         self.p_periods = None
-        self.headers = None
+        self.headers = {
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'ru,en;q=0.9',
+            'Access-Control-Allow-Origin': '*',
+            'Connection': 'keep-alive',
+            'Content-Type': 'text/plain',
+            'Referer': 'https://dnevnik2.petersburgedu.ru/estimate',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin',
+            'User-agent': self.user_agent,
+            'X-KL-Ajax-Request': 'Ajax_Request',
+            'X-Requested-With': 'XMLHttpRequest',
+            'sec-ch-ua': '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
+            'sec-ch-ua-mobile': '?0',
+        }
 
-    def chek_esimate_type_name(self, estimate_type_name: str):
-        for good_value in self.good_value_of_estimate_type_name:
+    @classmethod
+    def chek_esimate_type_name(cls, estimate_type_name: str):
+        for good_value in cls.good_value_of_estimate_type_name:
             if good_value in estimate_type_name.lower():
                 return True
         return False
@@ -119,126 +225,8 @@ class Marks:
 
         return marks
 
-    def save_cookies(self):
-        if not os.path.exists(f'cookies/cookies{self.user_id}'):
-            with open('useragents/user_agent.txt') as f:
-                user_agents = f.readlines()
-                ua = random.choice(user_agents).strip()
-            self.user_agent = ua
-            self.headers = {
-                'Accept': '*/*',
-                'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Access-Control-Allow-Origin': '*',
-                'Connection': 'keep-alive',
-                'Content-Type': 'text/plain',
-                'Referer': 'https://dnevnik2.petersburgedu.ru/estimate',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-origin',
-                'User-agent': ua,
-                'X-KL-Ajax-Request': 'Ajax_Request',
-                'X-Requested-With': 'XMLHttpRequest',
-                'sec-ch-ua': '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
-                'sec-ch-ua-mobile': '?0',
-            }
-
-            # options = webdriver.ChromeOptions()
-            options = webdriver.FirefoxOptions()
-            options.add_argument(f'user-agent={ua}')
-            options.add_argument('--disable-blink-features=AutomationControlled')
-            options.add_argument('--headless')
-            options.add_argument('--no-sandbox')
-            # options.add_argument(f'--proxy-server={random.choice(proxies)}')
-
-            # driver = webdriver.Chrome(
-            #     executable_path=EX_PATH_DRIVER,
-            #     options=options
-            # )
-
-            driver = webdriver.Firefox(
-                executable_path=os.getenv('EX_PATH_DRIVER'),
-                options=options,
-            )
-
-            url = 'https://dnevnik2.petersburgedu.ru'
-
-            try:
-                driver.get(url=url)
-                time.sleep(3)
-                get_esia = driver.find_element(By.CLASS_NAME, 'button_size_m')
-                driver.execute_script("arguments[0].click();", get_esia)
-                time.sleep(5)
-                email_esia = driver.find_element(By.ID, 'login')
-                passw_esia = driver.find_element(By.ID, 'password')
-                email_esia.send_keys(self.login)
-                passw_esia.send_keys(self.password)
-                driver.find_element(By.CLASS_NAME, 'plain-button_wide').click()
-                time.sleep(3)
-                driver.find_element(By.CLASS_NAME, 'plain-button-inline').click()
-                time.sleep(3)
-                pickle.dump(driver.get_cookies(), open(f'cookies/cookies{self.user_id}', 'wb'))
-                params_group_id = {
-                    'p_page': '1'
-                }
-
-                cookies = {cookies_data['name']: str(cookies_data['value']) for cookies_data in pickle.load(open(f'cookies/cookies{self.user_id}', 'rb'))}
-                name = db.get_name(user_id=self.user_id)[0]
-                response_info = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/person/related-child-list', params=params_group_id, cookies=cookies, headers=self.headers).json().get('data').get('items')
-                students_info = None
-                for data in response_info:
-                    if data.get('firstname') == name:
-                        students_info = data
-                        break
-
-                group_id = students_info['educations'][0]['group_id']
-                education_id = students_info['educations'][0]['education_id']
-                db.set_group_id(user_id=self.user_id, group_id=group_id)
-                db.set_education_id(user_id=self.user_id, education_id=education_id)
-                self.cookies = cookies
-
-            except TypeError:
-                ...
-            finally:
-                driver.quit()
-        else:
-            with open('useragents/user_agent.txt') as f:
-                user_agents = f.readlines()
-                ua = random.choice(user_agents).strip()
-
-
-            self.user_agent = ua
-            cookies = {cookies_data['name']: str(cookies_data['value']) for cookies_data in
-                       pickle.load(open(f'cookies/cookies{self.user_id}', 'rb'))}
-
-            self.cookies = cookies
-
-
-    def get_cookies(self):
-        cookies = {cookies_data['name']: str(cookies_data['value']) for cookies_data in
-                   pickle.load(open(f'cookies/cookies{self.user_id}', 'rb'))}
-        return cookies
-
-    def set_marks_params(self):
-        cookies = self.cookies
-        self.headers = {
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'ru,en;q=0.9',
-            'Access-Control-Allow-Origin': '*',
-            'Connection': 'keep-alive',
-            'Content-Type': 'text/plain',
-            'Referer': 'https://dnevnik2.petersburgedu.ru/estimate',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-origin',
-            'User-agent': self.user_agent,
-            'X-KL-Ajax-Request': 'Ajax_Request',
-            'X-Requested-With': 'XMLHttpRequest',
-            'sec-ch-ua': '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
-            'sec-ch-ua-mobile': '?0',
-        }
-
+    def set_marks_params(self, cookies):
         group_id = db.get_group_id(self.user_id)[1]
-
         params_date_f_t = {
             'p_group_ids[]': group_id,
             'p_page': '1',
@@ -253,7 +241,7 @@ class Marks:
                 self.p_periods = str(data.get('identity').get('id'))
                 break
 
-    def get_marks(self):
+    def get_marks(self, cookies):
         p_educations = db.get_education_id(self.user_id)[0]
         p_groups = db.get_group_id(self.user_id)[1]
         params = {
@@ -264,7 +252,7 @@ class Marks:
             'p_page': '1',
         }
 
-        response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params, cookies=self.cookies, headers=self.headers).json()
+        response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params, cookies=cookies, headers=self.headers).json()
 
         params_list_subjects = {
             'p_limit': '100',
@@ -273,7 +261,7 @@ class Marks:
             'p_groups[]': p_groups,
             'p_periods[]': self.p_periods,
         }
-        list_subjects = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/subject/list-studied',params=params_list_subjects,cookies=self.cookies,headers=self.headers).json().get('data').get('items')
+        list_subjects = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/subject/list-studied',params=params_list_subjects,cookies=cookies,headers=self.headers).json().get('data').get('items')
 
         marks = {}
         for info_marks_all in list_subjects:
@@ -301,7 +289,7 @@ class Marks:
                 }
 
                 response = requests.get('https://dnevnik2.petersburgedu.ru/api/journal/estimate/table', params=params,
-                                        cookies=self.cookies, headers=self.headers).json()
+                                        cookies=cookies, headers=self.headers).json()
                 marks = self.get_marks_dict(response=response, marks=marks)
 
         return marks
@@ -310,9 +298,11 @@ class Marks:
 def get_m_result(user_id: int, quater: str):
     login, password = db.get_login_and_password(user_id)
     mark = Marks(user_id=user_id, quater=quater, login=login, password=password)
-    mark.save_cookies()
-    mark.set_marks_params()
-    not_sort_m = mark.get_marks()
+    cookies = Cookies(user_id)
+    cookies.save_cookies(login, password)
+    cookies = cookies.get_cookies(user_id)
+    mark.set_marks_params(cookies)
+    not_sort_m = mark.get_marks(cookies)
     marks = mark.sort_marks(not_sort_m)
     return marks
 
