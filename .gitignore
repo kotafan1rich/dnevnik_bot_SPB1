@@ -5,6 +5,5 @@ __pycache__
 /static
 .DS_Store
 *.env
-geckodriver.log
-chrome
-cookies/*
+/chrome
+*.vscode

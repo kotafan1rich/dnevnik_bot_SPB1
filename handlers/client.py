@@ -1,8 +1,10 @@
+import contextlib
 import os
 
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher import FSMContext
 from aiogram import types, Dispatcher
+import requests
 from create_bot import bot
 from handlers import other
 from keyboards import kb_client, kb_client_login, kb_admin, kb_client_settings
@@ -41,13 +43,10 @@ class FSMLoginEsia(StatesGroup):
 async def get_message(message: types.Message, quater: str):
     wait_message = None
     res = ERROR_MES
-    try:
-        wait_message = await bot.send_message(message.chat.id, 'Подожди...')
-        res = other.get_m_result(quater=quater, user_id=message.from_user.id)
-    except:
-        pass
-    finally:
-        await bot.edit_message_text(chat_id=message.from_user.id, message_id=wait_message.message_id, text=res)
+    wait_message = await bot.send_message(message.chat.id, 'Подожди...')
+    res = other.get_m_result(quater=quater, user_id=message.from_user.id)
+
+    await bot.edit_message_text(chat_id=message.from_user.id, message_id=wait_message.message_id, text=res)
 
 
 async def add_login_password_db(state: FSMContext, user_id):
@@ -56,10 +55,8 @@ async def add_login_password_db(state: FSMContext, user_id):
         password = data['password']
         db.set_login(user_id=user_id, login=login)
         db.set_password(user_id=user_id, password=password)
-        try:
+        with contextlib.suppress(FileNotFoundError):
             os.remove(f'cookies/cookies{user_id}')
-        except FileNotFoundError:
-            pass
 
 
 async def get_start(message: types.Message):
@@ -77,9 +74,7 @@ async def get_start(message: types.Message):
             await bot.send_message(message.chat.id, 'Введите логин', reply_markup=kb_client_login)
             if user_id in admins:
                 await bot.send_message(message.chat.id, 'Здравствуйте', reply_markup=kb_admin)
-
-    else:
-        if user_id in admins:
+        elif user_id in admins:
             await bot.send_message(message.chat.id, 'Здравствуйте', reply_markup=kb_admin)
         else:
             await bot.send_message(message.chat.id, 'Снова здравствуйте', reply_markup=kb_client)
@@ -99,6 +94,8 @@ async def get_name(message: types.Message, state: FSMContext):
             os.remove(f'cookies/cookies{message.from_user.id}')
         except FileNotFoundError:
             ...
+        await bot.send_message(message.chat.id, 'Подождите...')
+        other.upload_data(user_id=message.from_user.id, login=data['login'], password=data['password'], name=data['password'])
         await state.finish()
         await bot.send_message(message.chat.id, 'Добавлено', reply_markup=kb_client)
 
@@ -137,15 +134,9 @@ async def get_help(message: types.Message):
 
 
 async def del_cookies(message: types.Message):
-    res = None
-    user_id = message.chat.id
-    try:
-        os.remove(f'cookies/cookies{user_id}')
-        res = 'Cookies были удалены'
-    except FileNotFoundError:
-        res = 'У нас нету ваших Cookies'
-    finally:
-        await bot.send_message(user_id, res, reply_markup=kb_client)
+    user_id = message.from_user.id
+    other.delete_cookies(user_id)
+    await bot.send_message(user_id, 'Удалено', reply_markup=kb_client)
 
 async def get_settings(message: types.Message):
     await bot.send_message(message.from_user.id, SETTINGS, reply_markup=kb_client_settings)
